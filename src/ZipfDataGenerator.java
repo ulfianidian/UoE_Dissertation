@@ -7,10 +7,21 @@ import java.util.Collections;
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.commons.io.FileUtils;
 
+
+/**
+ * @author Ulfiani Primawati
+ *
+ * This is a class to generate data based on a Zipfian Distribution
+ */
 public class ZipfDataGenerator {
     protected static int KEY_SPACE;
     protected static int TOTAL_RECORDS;
 
+    /**
+     * Constructor method for ZipfDataGenerator class
+     * @param keySpace The number of distinct values
+     * @param totalRecords Desired tuple counts
+     */
     public ZipfDataGenerator(int keySpace, int totalRecords){
         KEY_SPACE = keySpace;
         TOTAL_RECORDS = totalRecords;
@@ -62,6 +73,12 @@ public class ZipfDataGenerator {
         return file.getAbsolutePath();
     }
 
+    /**
+     * A method that returns random KeySpace from a list of sequential number.
+     * @param source This method will generate a random key space collected from 1 - souce
+     * @param size Desired number of distinct elements
+     * @return Key space
+     */
     private double[] generateKeySpace(int source, int size){
         ArrayList<Double> list = new ArrayList<Double>();
         for(int i = 1; i <= source; i++)
