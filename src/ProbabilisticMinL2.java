@@ -1,4 +1,3 @@
-import java.awt.geom.PathIterator;
 import java.util.Arrays;
 
 /**
@@ -72,5 +71,42 @@ public class ProbabilisticMinL2 {
         }
 
         return roundingValues;
+    }
+
+    /**
+     * Performs a biased coin flip that returns true if the result from coin flipping
+     * rounds the value up to the rounding value, else returns false.
+     *
+     * @param coefficient coefficient
+     * @param lambda rounding value for that coefficient
+     * @return true if rounds up, and false if rounds to zero
+     */
+    public static boolean roundUp(double coefficient, double lambda){
+        double randomDouble = Math.random();
+        double probability = coefficient / lambda;
+
+        if(lambda == 0.0)
+            return false;
+
+        return randomDouble <= probability;
+    }
+
+    /**
+     * This method performs the construction of probabilistic wavelet synopsis
+     * that minimize the mean-squared error metric. This method will call calcRoundingValues
+     * method, and then perform a biased coin flipping to determine the rounding for each
+     * element the coefficients array.
+     *
+     * @param wavelet wavelet coefficients
+     * @param b tuple counts
+     */
+    public static void waveletMinL2(double[] wavelet, int b){
+        double[] roundingValues = calcRoundingValues(wavelet, b);
+        for(int i = 0; i < wavelet.length; i++){
+            if(roundUp(wavelet[i], roundingValues[i]))
+                wavelet[i] = roundingValues[i];
+            else
+                wavelet[i] = 0.0;
+        }
     }
 }
