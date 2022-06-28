@@ -119,11 +119,11 @@ public class Conventional {
         OneDHWT.displayData(conventionalHWT);
 
         //Reconstruct one element
-        getOneElement(coeffsMapping, tupleCounts, 8);
+        //getOneElement(coeffsMapping, tupleCounts, 15);
     }
 
     /**
-     * Not yet finished
+     * Get the Nth value reconstructed from coefficient mapping.
      *
      * @param coeffsMapping Coefficients mapping
      * @param tupleCounts The number of tuples
@@ -135,26 +135,14 @@ public class Conventional {
         int middlePoint = tupleCounts / 2;
         int end = tupleCounts - 1;
         int i = 1;
-        int level = 0;
-        int increment = 0;
         double sum = coeffsMapping.get(0);
 
         for(int j = 0; j < NUM_OF_LOOPS; j++){
-            System.out.println("start: " + start);
-            System.out.println("middle point: " + middlePoint);
-            System.out.println(("end: " + end));
-            System.out.println("i: " + i);
-            System.out.println("level: " + level);
             if(nthValue < middlePoint){
                 if(coeffsMapping.containsKey(i)) {
                     sum += coeffsMapping.get(i);
-                    System.out.println(coeffsMapping.get(i));
                 }
-                System.out.println("sum : " + sum);
-                if(true){
-                    i = i + increment + (int)Math.pow(2.0, (double)level);
-                }
-                System.out.println("next i: "+ i);
+                i = 2 * i;
                 end = middlePoint - 1;
                 middlePoint = start + ( (middlePoint - start) / 2);
             }
@@ -162,22 +150,12 @@ public class Conventional {
             else{
                 if(coeffsMapping.containsKey(i)) {
                     sum -= coeffsMapping.get(i);
-                    System.out.println(coeffsMapping.get(i));
                 }
-                System.out.println("sum : " + sum);
-                if(true){
-                    increment++;
-                    i = i + increment + (int)Math.pow(2.0, (double)level);
-                }
-                System.out.println("next i: "+ i);
+                i = 2 * i + 1;
                 start = middlePoint;
-                //end = start + middlePoint - 1;
                 middlePoint = start + (end + 1 - start) / 2;
             }
-            level++;
-            System.out.println();
         }
-        System.out.println(sum);
     }
 
     public static void calculateRangeSum(){
@@ -186,51 +164,5 @@ public class Conventional {
 
     public static void calculateRangeAvg(){
 
-    }
-
-    /**
-     * DO NOT USE
-     *
-     * @param wavelet the wavelet
-     * @param b the number of retained coefficients
-     */
-    public static void retainNCoefficients(double[] wavelet, double[] normalizedCoeffs, int b){
-        // Populate topNValues, topNAbsNormValues, and topNIndices with the first N values, the first
-        // N absolute normalized coefficients, and their corresponding indices.
-        double[] topNValues = Arrays.copyOfRange(wavelet, 0, b);
-
-        double[] topNAbsNormValues = new double[b];
-        for(int k = 0; k < b; k++){
-            topNAbsNormValues[k] = Math.abs(normalizedCoeffs[k]);
-        }
-
-        int[] topNIndices = new int[b];
-        for(int i = 0; i < b; i++){
-            topNIndices[i] = i;
-        }
-
-        // Iterate through the wavelet to get N largest coefficients.
-        double nextVal;
-        for(int j = b; j < wavelet.length; j++){
-            nextVal = Math.abs(normalizedCoeffs[j]);
-            boolean isBigger = false;
-            int a = 0;
-            while( !isBigger && a < b){
-                if(nextVal > topNAbsNormValues[a]){
-                    isBigger = true;
-                    topNAbsNormValues[a] = nextVal;
-                    topNValues[a] = wavelet[j];
-                    topNIndices[a] = j;
-                }
-                a++;
-            }
-        }
-
-        // Print the retained coefficients and their indices on the console
-        for(int x = 0; x < b; x++){
-            System.out.println("index: " + topNIndices[x] + ", value: " + topNValues[x]);
-        }
-
-        HashMap<Integer, Double> retainedCoeffs = storeToHashMap(topNIndices, topNValues);
     }
 }

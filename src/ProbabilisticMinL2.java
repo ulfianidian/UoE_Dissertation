@@ -4,7 +4,7 @@ import java.util.Arrays;
  * @author Ulfiani Primawati
  *
  * This is an implementation of the probabilistic thresholding technique
- * that minimized the L2 (mean-squared error) error metric. This algorithm
+ * that minimizes the L2 (mean-squared error) error metric. This algorithm
  * deterministically keeps the most important wavelet coefficients while
  * randomly rounding the other coefficients either down to zero or up to a
  * larger value (called a "rounding value").
@@ -70,6 +70,12 @@ public class ProbabilisticMinL2 {
             }
         }
 
+        // delete later
+        System.out.println("Rounding values:");
+        for(int a = 0; a < roundingValues.length; a++){
+            System.out.println(roundingValues[a]);
+        }
+
         return roundingValues;
     }
 
@@ -107,6 +113,13 @@ public class ProbabilisticMinL2 {
                 wavelet[i] = roundingValues[i];
             else
                 wavelet[i] = 0.0;
+        }
+
+        // delete later
+        System.out.println();
+        System.out.println("Resulting wavelet:");
+        for(int a = 0; a < wavelet.length; a++){
+            System.out.println(wavelet[a]);
         }
     }
 }

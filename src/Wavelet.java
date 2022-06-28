@@ -17,8 +17,14 @@ public class Wavelet {
         /**ReconstructData("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/OneMillionWavelet",
                 "/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/ZipfDistribution2964476632319761509.txt");**/
 
-        getConventionalWavelet("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/original_data/smalldata",
-                16, "/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/wavelet/wavelet1");
+        /**
+         // Get lambda
+         System.out.println();
+         double[] wavelet = OneDHWT.fileToArrayOfDoubles("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/wavelet/wavelet1");
+         ProbabilisticMinL2.waveletMinL2(wavelet, 8);**/
+
+        /**getConventionalWavelet("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/original_data/smalldata",
+                8, "/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/wavelet/wavelet1");**/
     }
 
     public static void generateZipfData(int keySpace, int tupleCounts) throws IOException {
@@ -56,4 +62,5 @@ public class Wavelet {
         Conventional.retainNCoeffs(wavelet, normalizedCoeffs, b);
         //OneDHWT.saveDataToFile(normalizedCoeffs, writeTo);
     }
+
 }
