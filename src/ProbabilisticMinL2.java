@@ -89,10 +89,11 @@ public class ProbabilisticMinL2 {
      */
     public static boolean roundUp(double coefficient, double lambda){
         double randomDouble = Math.random();
-        double probability = coefficient / lambda;
 
         if(lambda == 0.0)
             return false;
+
+        double probability = coefficient / lambda;
 
         return randomDouble <= probability;
     }

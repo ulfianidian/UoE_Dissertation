@@ -129,7 +129,7 @@ public class Conventional {
      * @param tupleCounts The number of tuples
      * @param nthValue Nth value
      */
-    public static void getOneElement(HashMap<Integer, Double> coeffsMapping, int tupleCounts, int nthValue){
+    public static double getOneElement(HashMap<Integer, Double> coeffsMapping, int tupleCounts, int nthValue){
         final int NUM_OF_LOOPS = (int)(Math.log(tupleCounts) / Math.log(2.0));
         int start = 0;
         int middlePoint = tupleCounts / 2;
@@ -156,6 +156,7 @@ public class Conventional {
                 middlePoint = start + (end + 1 - start) / 2;
             }
         }
+        return sum;
     }
 
     public static void calculateRangeSum(){

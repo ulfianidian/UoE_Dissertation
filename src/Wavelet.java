@@ -7,6 +7,25 @@ public class Wavelet {
            // Add message and then return
         }
 
+        double[] data = {3, 3, 3, 3, 3, 3, 3, 3, 7, 7, 11, 12, 12, 14, 15, 16};
+        double[] wavelet = {3, 3, 3, 3, 3, 3, 3, 3, 7, 7, 11, 12, 12, 14, 15, 16};
+        OneDHWT.orderedFastHWT(wavelet);
+
+        for(int i = 0; i < wavelet.length; i++){
+            System.out.println(wavelet[i]);
+        }
+        System.out.println();
+
+        double percentile = 10.0;
+        int[] nzArray = ProbMinRelVar.constructNzArray(wavelet);
+
+        for(int i = 0; i < wavelet.length; i++){
+            System.out.println(nzArray[i]);
+        }
+        System.out.println();
+
+        ProbMinRelVar.applyPerturbationRule(wavelet, nzArray, data, percentile);
+
         //generateZipfData(1000, 1048576);
 
 
