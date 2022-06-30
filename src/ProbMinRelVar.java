@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,8 +17,20 @@ import java.util.List;
  */
 
 public class ProbMinRelVar {
-    public static void applyPerturbationRule(double[] wavelet, int[] nzArray, double[] data, double percentile){
-        double nthPercentile = findPercentile(data, percentile);
+    /**
+     * This method performs perturbation rule. For each subtree Tj such that
+     * (1) one of its child subtrees, say T(2j) has all zero coefficients,
+     * (2) its other child subtree T(2j+1) has at least one nonzero coefficient, and
+     * (3) the minimum data value in T2j is less than the minimum data value in T(2j+1),
+     * we perturb c(2j) in wavelet. "wavelet" will contain the coefficients after
+     * pertubation.
+     *
+     * @param wavelet the wavelet
+     * @param nzArray an array that consists of the number of nonzero coefficients rooted at each subtree
+     * @param data the original data
+     * @param nthPercentile Nth percentile value
+     */
+    public static double[] applyPerturbationRule(double[] wavelet, int[] nzArray, double[] data, double nthPercentile){
         double delta = Math.min(0.01, nthPercentile / 100.0);
         double[] minValues = minEachSubtree(data);
 
@@ -59,15 +72,7 @@ public class ProbMinRelVar {
 
             }
         }
-
-        // delete
-        for(int a = 0; a < wavelet.length; a++){
-            System.out.println(nzArray[a]);
-        }
-        System.out.println();
-        for(int a = 0; a < wavelet.length; a++){
-            System.out.println(wavelet[a]);
-        }
+        return minValues;
     }
 
     private static int flipCoin(){
@@ -152,29 +157,211 @@ public class ProbMinRelVar {
     }
 
     /**
-    public static double[] calcNorm(){
+     * This method will call the applyPerturbationRule method, the resulting wavelet
+     * then can be used to apply the MinRelVal algorithm.
+     * @param wavelet the wavelet
+     * @param nzArray an array that consists of the number of nonzero coefficients rooted at each subtree
+     * @param data the data
+     * @param percentile percentile
+     * @return An array of 'form' of each node
+     */
+    public static double[] perturbAndCalcNorm(double[] wavelet, int[] nzArray, double[] data, double percentile){
+        double nthPercentile = findPercentile(data, percentile);
+        double[] minValues = applyPerturbationRule(wavelet, nzArray, data, nthPercentile);
+        double[] norm = new double[wavelet.length];
 
+        for(int i = 0; i < wavelet.length; i++){
+            norm[i] = Math.max(Math.pow(minValues[i], 2.0), Math.pow(nthPercentile, 2.0));
+        }
+
+        return norm;
     }
 
-    public OptimalNSE getOptimalNSE(double[] wavelet, double b, int q, int root){
+    public static double getOptimalNSE(double[] wavelet, double B, int q, int root,
+                                       int[] nzArray, double[] norm,
+                                       double[][] mValues, double[][] yValues, double[][] leftAllot,
+                                       boolean[][] checked){
 
-    }**/
-}
+        int indexB = (int)Math.rint(B * q);
 
-class OptimalNSE {
-    double value;
-    double yValue;
-    double leftAllot;
-    double b;
-    boolean computed;
-    int root;
+        if(root > wavelet.length - 1 || nzArray[root] <= B)
+            return 0;
 
-    OptimalNSE(double value, double yValue, double leftAllot, double b, boolean computed, int root){
-        this.value = value;
-        this.yValue = yValue;
-        this.leftAllot = leftAllot;
-        this.b = b;
-        this.computed = computed;
-        this.root = root;
+        if(nzArray[root] > B * q)
+            return Double.POSITIVE_INFINITY;
+
+        if(checked[root][indexB])
+            return mValues[root][indexB];
+
+        mValues[root][indexB] = Double.POSITIVE_INFINITY;
+
+        double rootLeft;
+        double rootRight;
+        double rootSpace;
+
+        for(int l = 1; l <= q; l++){
+            if(wavelet[root] == 0 || 2 * root > wavelet.length - 1){
+                rootLeft = 0.0;
+                rootRight = 0.0;
+                rootSpace = 0.0;
+            }
+            else{
+                rootLeft = (q - l) * Math.pow(wavelet[root], 2.0) / (l * norm[2 * root]);
+                rootRight = (q - l) * Math.pow(wavelet[root], 2.0) / (l * norm[2 * root + 1]);
+                rootSpace = (double)l / (double)1;
+            }
+
+            for(double _b = 0; _b <= B - rootSpace; _b = _b + (1.0 / (double)q)){
+                double left = getOptimalNSE(wavelet, _b, q, 2 * root,
+                        nzArray, norm, mValues, yValues, leftAllot, checked);
+                double right = getOptimalNSE(wavelet, B - rootSpace - _b, q, 2 * root + 1,
+                        nzArray, norm, mValues, yValues, leftAllot, checked);
+                double max = Math.max(rootLeft + left, rootRight + right);
+                if(max < mValues[root][indexB]){
+                    mValues[root][indexB] = max;
+                    yValues[root][indexB] = rootSpace;
+                    leftAllot[root][indexB] = _b;
+                }
+            }
+            if(wavelet[root] == 0){
+                break;
+            }
+        }
+        checked[root][indexB] = true;
+        return mValues[root][indexB];
+    }
+
+    public static void callMainFunction(String pathWavelet, double b, int q, String pathData, double percentile)
+            throws IOException {
+
+        double[] wavelet = OneDHWT.fileToArrayOfDoubles(pathWavelet);
+        double[] data = OneDHWT.fileToArrayOfDoubles(pathData);
+        int[] nzArray = constructNzArray(wavelet);
+        int length_1 = wavelet.length;
+        int length_2 = (int)Math.rint(b * q) + 1;
+        double[] norm = perturbAndCalcNorm(wavelet, nzArray, data, percentile);
+        double[][] mValues = new double[length_1][length_2];
+        double[][] yValues = new double[length_1][length_2];
+        double[][] leftAllot = new double[length_1][length_2];
+        boolean[][] checked = new boolean[length_1][length_2];
+
+        double optimalValue = getOptimalNSE(wavelet, b, q, 1, nzArray, norm, mValues, yValues, leftAllot, checked);
+
+        for(int j = 0; j < length_2; j++) {
+            System.out.println(mValues[1][j]);
+        }
+    }
+
+    public static double getOptimalNSE2(double[] wavelet, double b, int q, int root,
+                                       int[] nzArray, double[] norm,
+                                       double[] mValues, double[] mYValues, double[] leftAllot,
+                                       boolean[] checked){
+
+        if(root > wavelet.length - 1 || nzArray[root] <= b)
+            return 0;                           // enough space to keep all coefficients
+
+        if(nzArray[root] > b * q)
+            return Double.POSITIVE_INFINITY;    // not enough space even for minimal allocation to each coefficient
+
+        if(checked[root])
+            return mValues[root];
+
+        mValues[root] = Double.POSITIVE_INFINITY;
+
+        double rootLeft;
+        double rootRight;
+        double rootSpace;
+
+        for(int l = 1; l <= q; l++){
+            if(wavelet[root] == 0){
+                rootLeft = 0.0;
+                rootRight = 0.0;
+                rootSpace = 0.0;
+            }
+            else{
+                rootLeft = (q - l) * Math.pow(wavelet[root], 2.0) / (l * norm[2 * root]);
+                rootRight = (q - l) * Math.pow(wavelet[root], 2.0) / (l * norm[2 * root + 1]);
+                rootSpace = (double)l / (double)q;
+            }
+
+            for(double _b = 0; _b <= b - rootSpace; _b = _b +  (1.0 / (double)q)){
+                double left = getOptimalNSE2(wavelet, _b, q, 2 * root,
+                        nzArray, norm, mValues, mYValues, leftAllot, checked);
+                double right = getOptimalNSE2(wavelet, b - rootSpace - _b, q, 2 * root + 1,
+                        nzArray, norm, mValues, mYValues, leftAllot, checked);
+                double max = Math.max(rootLeft + left, rootRight + right);
+                if(max < mValues[root]){
+                    mValues[root] = max;
+                    mYValues[root] = rootSpace;
+                    leftAllot[root] = _b;
+                }
+            }
+            if(wavelet[root] == 0.0)
+                break;
+        }
+        checked[root] = true;
+        return mValues[root];
+    }
+
+    public static void callMainFunction2(String pathWavelet, double b, int q, String pathData, double percentile)
+            throws IOException {
+        double[] wavelet = OneDHWT.fileToArrayOfDoubles(pathWavelet);
+        double[] data = OneDHWT.fileToArrayOfDoubles(pathData);
+        int[] nzArray = constructNzArray(wavelet);
+        double[] norm = perturbAndCalcNorm(wavelet, nzArray, data, percentile);
+        double[] mValues = new double[wavelet.length];
+        double[] mYValues = new double[wavelet.length];
+        double[] leftAllot = new double[wavelet.length];
+        boolean[] checked = new boolean[wavelet.length];
+
+        double root;
+        double rootSpace;
+
+        mValues[0] = Double.POSITIVE_INFINITY;
+        for(int l = 1; l <= q; l++){
+            if(wavelet[0] == 0.0){
+                root = 0;
+                rootSpace = 0;
+            }
+            else{
+                root = (q - l) * Math.pow(wavelet[0], 2.0) / (l * norm[1]);
+                rootSpace = (double)l / (double)q;
+            }
+
+            for(double _b = 0; _b <= b - rootSpace; _b = _b +  (1.0 / (double)q)){
+                double next = getOptimalNSE2(wavelet, _b, q, 1, nzArray, norm, mValues, mYValues, leftAllot, checked);
+                if(root + next < mValues[0]){
+                    mValues[0] = root + next;
+                    mYValues[0] = rootSpace;
+                    leftAllot[0] = _b;
+                }
+            }
+
+            if(wavelet[0] == 0.0)
+                break;
+        }
+
+        checked[0] = true;
+
+        //delete
+        System.out.println("M values: ");
+        for(int i = 0; i < wavelet.length; i++){
+            System.out.println(mValues[i]);
+        }
+        System.out.println();
+
+        //delete
+        System.out.println("y values: ");
+        for(int i = 0; i < wavelet.length; i++){
+            System.out.println(mYValues[i]);
+        }
+        System.out.println();
+
+        //delete
+        System.out.println("lambda values: ");
+        for(int i = 0; i < wavelet.length; i++){
+            System.out.println(wavelet[i] / mValues[i]);
+        }
+        System.out.println();
     }
 }
