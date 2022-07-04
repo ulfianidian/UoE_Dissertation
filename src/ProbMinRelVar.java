@@ -184,7 +184,7 @@ public class ProbMinRelVar {
 
         int indexB = (int)Math.rint(B * q);
 
-        if(root > wavelet.length - 1 || nzArray[root] <= B)
+        if(root > wavelet.length - 1 || B - (double)nzArray[root] >= 1e-6) // was  { nzArray[root] <= B }
             return 0;
 
         if(nzArray[root] > B * q)
@@ -216,18 +216,20 @@ public class ProbMinRelVar {
                 rootSpace = (double)l / (double)q;
             }
 
-            for(double _b = 0; _b <= B - rootSpace; _b = _b + (1.0 / (double)q)){
-                double left = getOptimalNSE(wavelet, _b, q, 2 * root,
+            for(int _b = 0; _b <= indexB - l; _b++){
+                double __b = (double)_b / (double)q;
+                double left = getOptimalNSE(wavelet, __b, q, 2 * root,
                         nzArray, norm, mValues, yValues, leftAllot, checked);
-                double right = getOptimalNSE(wavelet, B - rootSpace - _b, q, 2 * root + 1,
+                double right = getOptimalNSE(wavelet, B - rootSpace - __b, q, 2 * root + 1,
                         nzArray, norm, mValues, yValues, leftAllot, checked);
                 double max = Math.max(rootLeft + left, rootRight + right);
                 if(max < mValues[root][indexB]){
                     mValues[root][indexB] = max;
                     yValues[root][indexB] = rootSpace;
-                    leftAllot[root][indexB] = _b;
+                    leftAllot[root][indexB] = __b;
                 }
             }
+
             if(wavelet[root] == 0){
                 break;
             }
@@ -264,13 +266,14 @@ public class ProbMinRelVar {
                 rootSpace = (double)l / (double)q;
             }
 
-            for(double _b = 0; _b <= b - rootSpace; _b = _b +  (1.0 / (double)q)){
-                double next = getOptimalNSE(wavelet, _b, q, 1,
+            for(int _b = 0; _b <= (int)Math.rint(b * q) - l; _b++){
+                double __b = (double)_b / (double)q;
+                double next = getOptimalNSE(wavelet, __b, q, 1,
                         nzArray, norm, mValues, yValues, leftAllot, checked);
                 if(root + next < mValues[0][(int)Math.rint(b * q)]){
                     mValues[0][(int)Math.rint(b * q)] = root + next;
                     yValues[0][(int)Math.rint(b * q)]= rootSpace;
-                    leftAllot[0][(int)Math.rint(b * q)] = _b;
+                    leftAllot[0][(int)Math.rint(b * q)] = __b;
                 }
             }
 
@@ -280,10 +283,49 @@ public class ProbMinRelVar {
 
         checked[0][(int)Math.rint(b * q)] = true;
 
-        // Print on the console
-        System.out.println();
-        for(int j = 0; j < length_2; j++) {
-            System.out.println(leftAllot[0][j]);
+        // Put all optimal y values for each coefficient in an array
+        double[] chosenY = new double[length_1];
+        double[] bValue = new double[length_1];
+
+        bValue[0] = b;
+
+        chosenY[0] = yValues[0][(int)(b * q)];
+        bValue[1] = leftAllot[0][(int)(b * q)];
+
+        for(int i = 1; i < length_1; i++){
+            chosenY[i] = yValues[i][(int)(Math.round(bValue[i] * q))];
+            if(i * 2 < length_1) {
+                bValue[i * 2] = leftAllot[i][(int)(Math.round(bValue[i] * q))];
+                bValue[i * 2 + 1] = bValue[i] - bValue[i * 2] - chosenY[i];
+            }
         }
+
+        performCoinFlips(wavelet, chosenY);
+
+        // print to console, delete later
+        System.out.println();
+        System.out.println("Resulting wavelet:");
+        for (double v : wavelet) {
+            System.out.println(v);
+        }
+    }
+
+    public static void performCoinFlips(double[] wavelet, double[] chosenY){
+        for(int i = 0; i < wavelet.length; i++){
+            if(roundUp(chosenY[i]))
+                wavelet[i] = wavelet[i] / chosenY[i];
+
+            else
+                wavelet[i] = 0.0;
+        }
+    }
+
+    public static boolean roundUp(double yVal){
+        double randomDouble = Math.random();
+
+        if(yVal == 0.0)
+            return false;
+
+        return randomDouble <= yVal;
     }
 }

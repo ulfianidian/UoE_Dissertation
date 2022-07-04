@@ -72,8 +72,8 @@ public class ProbabilisticMinL2 {
 
         // delete later
         System.out.println("Rounding values:");
-        for(int a = 0; a < roundingValues.length; a++){
-            System.out.println(roundingValues[a]);
+        for (double roundingValue : roundingValues) {
+            System.out.println(roundingValue);
         }
 
         return roundingValues;
@@ -119,8 +119,8 @@ public class ProbabilisticMinL2 {
         // delete later
         System.out.println();
         System.out.println("Resulting wavelet:");
-        for(int a = 0; a < wavelet.length; a++){
-            System.out.println(wavelet[a]);
+        for (double v : wavelet) {
+            System.out.println(v);
         }
     }
 }
