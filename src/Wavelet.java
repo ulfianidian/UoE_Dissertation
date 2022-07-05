@@ -7,9 +7,10 @@ public class Wavelet {
            // Add message and then return
         }
 
-        ProbMinRelVar.callMainFunction("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/wavelet/wavelet1",
+        /**
+        ProbMinRelBias.callMainFunction("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/wavelet/wavelet1",
                 8.0, 10, "/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/original_data/smalldata",
-                10);
+                10);**/
 
         //generateZipfData(1000, 1048576);
 

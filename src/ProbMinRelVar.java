@@ -29,6 +29,7 @@ public class ProbMinRelVar {
      * @param nzArray an array that consists of the number of nonzero coefficients rooted at each subtree
      * @param data the original data
      * @param nthPercentile Nth percentile value
+     * @return minimum data values rooted at each subtree
      */
     public static double[] applyPerturbationRule(double[] wavelet, int[] nzArray, double[] data, double nthPercentile){
         double delta = Math.min(0.01, nthPercentile / 100.0);
