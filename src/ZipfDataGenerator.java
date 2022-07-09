@@ -80,7 +80,7 @@ public class ZipfDataGenerator {
      * @return Key space
      */
     private double[] generateKeySpace(int source, int size){
-        ArrayList<Double> list = new ArrayList<Double>();
+        ArrayList<Double> list = new ArrayList<>();
         for(int i = 1; i <= source; i++)
             list.add((double)i);
         Collections.shuffle(list);
