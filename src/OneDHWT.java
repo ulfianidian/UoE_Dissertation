@@ -1,6 +1,6 @@
 import java.io.*;
-import java.sql.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * @author Ulfiani Primawati
@@ -10,11 +10,6 @@ import java.util.ArrayList;
  */
 
 public class OneDHWT {
-    //public final static double FSNORM = Math.sqrt(2);
-    //public final static double FDNORM = 1/FSNORM;
-
-    //public final static double IDNORM = FSNORM;
-    //public final static double ISNORM = FDNORM;
 
     /**
      * This method is used to display the data
@@ -22,8 +17,8 @@ public class OneDHWT {
      */
     public static void displayData(double[] data){
         System.out.println("Data:");
-        for(int i = 0; i < data.length; i++){
-            System.out.println(data[i]);
+        for (double datum : data) {
+            System.out.println(datum);
         }
         System.out.println();
     }
@@ -85,6 +80,14 @@ public class OneDHWT {
         }
     }
 
+    public static double[] padWithZeroes(double[] data){
+        int i = largestPowerOf2LessThanN(data.length);
+
+        int logNBase2 = (int)(Math.log(i) / Math.log(2));
+        int i_2 = logNBase2 + 1;
+        return Arrays.copyOf(data, (int)Math.pow(2, i_2));
+    }
+
     /**
      * Write the data to a file
      * @param data The data
@@ -99,6 +102,30 @@ public class OneDHWT {
 
         for(double d: data){
             buffer.write(Double.toString(d));
+            buffer.newLine();
+        }
+
+        buffer.flush();
+
+        //Close the input stream
+        buffer.close();
+        file.close();
+    }
+
+    /**
+     * Write the data to a file
+     * @param data The data
+     * @param filePath File Path
+     * @throws FileNotFoundException File not found exception
+     * @throws IOException IO exception
+     */
+    public static void saveDataToFile(String[] data, String filePath)
+            throws FileNotFoundException, IOException {
+        FileWriter file = new FileWriter(filePath);
+        BufferedWriter buffer = new BufferedWriter(file);
+
+        for(String d: data){
+            buffer.write(d);
             buffer.newLine();
         }
 
@@ -154,6 +181,114 @@ public class OneDHWT {
      */
     public static double[] orderedFastHWT(String filePath) throws IOException, FileNotFoundException{
         double[] data = fileToArrayOfDoubles(filePath);
+        final int n = data.length;
+
+        if(!OneDHWT.isPowerOfTwo(n)){
+            double[] newData;
+            newData = padWithZeroes(data);
+            orderedFastHWT(newData);
+            return newData;
+        }
+        else{
+            orderedFastHWT(data);
+            return data;
+        }
+    }
+
+    public static double[] checkLength(double[] data){
+        final int n = data.length;
+        double[] newData;
+
+        if(!OneDHWT.isPowerOfTwo(n)){
+            newData = padWithZeroes(data);
+            orderedFastHWT(newData);
+            return newData;
+        }
+        else{
+            orderedFastHWT(data);
+            return data;
+        }
+    }
+
+    /**
+     * Performs the Ordered Fast Haar Wavelet Transform where the input is data array
+     * @param data Data array
+     */
+    public static void orderedFastHWT(double[] data){
+        final int n = data.length;
+
+        //If n is not an integer power of 2, then return
+        if(!OneDHWT.isPowerOfTwo(n)){
+            return;
+        }
+
+        //Compute the number of sweeps (e.g. if n = 8, then NUM_OF_SWEEPS is 3)
+        final int NUM_OF_SWEEPS = (int)(Math.log(n) / Math.log(2.0));
+
+        double aCoeff, cCoeff;
+
+        //If the number of sweeps is 1
+        if(NUM_OF_SWEEPS == 1){
+            aCoeff = (data[0] + data[1]) / 2.0;
+            cCoeff = (data[0] - data[1]) / 2.0;
+            data[0] = aCoeff;
+            data[1] = cCoeff;
+            return;
+        }
+
+        //If the number of sweeps is greater than 1
+        double[] aCoefficients;
+        double[] cCoefficients;
+        for(int nthSweep = 1; nthSweep < NUM_OF_SWEEPS; nthSweep++){
+
+            //size is the number of a-coefficients and c coefficients
+            //at nthSweep. E.g. if the data has 8 elements:
+            //Sweep 1: 4 a-coefficients and 4 c-coefficients;
+            //Sweep 2: 2 a-coefficients and 2 c-coefficients;
+            //Sweep 3: 1 a-coefficient and 1 c-coefficient.
+            double remainingSweeps = (double)(NUM_OF_SWEEPS - nthSweep);
+            int size = (int) Math.pow(2.0, remainingSweeps);
+
+            //endOfIndex is the index of last element in data[] at nthSweep
+            double sweeps = remainingSweeps + 1.0;
+            int endOfIndex = ((int)Math.pow(2.0, sweeps)) - 1;
+
+            aCoefficients = new double[size];
+            cCoefficients = new double[size];
+            int index_a = 0; // index for aCoefficients
+            int index_c = 0; // index for cCoefficients
+
+            //Build an array of a-coefficients and an array of c-coefficients
+            for(int i = 0; i <= endOfIndex; i += 2){
+                cCoefficients[index_a++] = (data[i] - data[i + 1]) / 2.0;
+                aCoefficients[index_c++] = (data[i] + data[i + 1]) / 2.0;
+            }
+
+            //Replace the first half of the data array with a-coefficients
+            //and the second half with c-coefficients.
+            for(int i = 0; i < size; i++){
+                data[i] = aCoefficients[i];
+                data[i + size] = cCoefficients[i];
+            }
+        }
+
+        //Do the last sweep
+        cCoeff = (data[0] - data[1]) / 2.0;
+        aCoeff = (data[0] + data[1]) / 2.0;
+        data[0] = aCoeff;
+        data[1] = cCoeff;
+    }
+
+    /**
+     * Performs the Ordered Fast Haar Wavelet Transform which takes input from a file
+     * Each sample in the file is a double written on a separate line.
+     * @param filePath Path of the file
+     * @return HWT of the data
+     * @throws IOException IO Exception
+     * @throws FileNotFoundException File not found exception
+     */
+    public static double[] orderedFastHWT2(String filePath) throws IOException, FileNotFoundException{
+        double[] data = fileToArrayOfDoubles(filePath);
         orderedFastHWT(data);
         return data;
     }
@@ -162,7 +297,7 @@ public class OneDHWT {
      * Performs the Ordered Fast Haar Wavelet Transform where the input is data array
      * @param data Data array
      */
-    public static void orderedFastHWT(double[] data){
+    public static void orderedFastHWT2(double[] data){
         final int n = data.length;
 
         //If n is not an integer power of 2, then return
@@ -258,7 +393,6 @@ public class OneDHWT {
             }
 
             System.arraycopy(values, 0, wavelet, 0, gap * 2);
-            //OneDHWT.displayData(wavelet1);
         }
     }
 
@@ -275,31 +409,5 @@ public class OneDHWT {
         double[] wavelet = fileToArrayOfDoubles(filePath);
         orderedFastHWTInverse(wavelet);
         return wavelet;
-    }
-
-    /**
-     * Compute In-Place Fast Haar Wavelet Transform
-     * @param data The array of data
-     */
-    public static void inPlaceFastHWT(double[] data){
-        // Write the code later ( inPlaceFastHaarWaveletTransform(double[] sample) )
-    }
-
-    /**
-     * Apply In-Place Fast Haar Wavelet Transform for numSweeps sweeps.
-     * @param data The array of data
-     * @param numIters The number of iterations
-     */
-    public static void inPlaceFastHWTForNumIters(double[] data, int numIters){
-        // Write the code later ( inPlaceFastHaarWaveletTransformForNumIters(double[] sample, int num_iters) )
-    }
-
-    /**
-     * Do the n-th sweep of In-Place Fast Haar Wavelet Transform
-     * @param data Array of Data
-     * @param sweepNum
-     */
-    public static void doNthSweepInPlaceFastHWT(double[] data, int sweepNum){
-        // Write the code later ( doNthSweepOfInPlaceFastHaarWaveletTransform(double[] sample, int sweep_number) )
     }
 }

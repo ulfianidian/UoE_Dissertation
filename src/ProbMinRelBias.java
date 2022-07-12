@@ -27,11 +27,11 @@ public class ProbMinRelBias {
         return norm;
     }
 
-    public static void callMainFunction(String pathWavelet, double b, int q, String pathData, double percentile)
+    public static void callMainFunction(double[] wavelet, double b, int q, double[] data, double percentile)
             throws IOException {
 
-        double[] wavelet = OneDHWT.fileToArrayOfDoubles(pathWavelet);
-        double[] data = OneDHWT.fileToArrayOfDoubles(pathData);
+        //double[] wavelet = OneDHWT.fileToArrayOfDoubles(pathWavelet);
+        //double[] data = OneDHWT.fileToArrayOfDoubles(pathData);
         int[] nzArray = ProbMinRelVar.constructNzArray(wavelet);
         int length_1 = wavelet.length;
         int length_2 = (int)Math.round(b * q) + 1;
@@ -76,13 +76,6 @@ public class ProbMinRelBias {
         }
 
         checked[0][indexB] = true;
-
-        //for(int i = 0; i < length_2; i++){
-        //    for(int j = 0; j < length_1; j++){
-        //        System.out.print(mValues[j][i] + "\t" + yValues[j][i] + "\t" + leftAllot[j][i] + "\t");
-        //    }
-        //    System.out.println();
-        //}
 
         // Put all optimal y values for each coefficient in an array
         double[] chosenY = new double[length_1];

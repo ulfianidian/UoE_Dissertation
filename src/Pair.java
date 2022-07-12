@@ -15,4 +15,6 @@ public class Pair implements Comparable<Pair>{
     public int getKey() {
         return this.index;
     }
+
+    public double getValue() { return this.value; }
 }

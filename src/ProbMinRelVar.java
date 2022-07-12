@@ -1,4 +1,3 @@
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -73,6 +72,7 @@ public class ProbMinRelVar {
 
             }
         }
+
         return minValues;
     }
 
@@ -239,11 +239,10 @@ public class ProbMinRelVar {
         return mValues[root][indexB];
     }
 
-    public static void callMainFunction(String pathWavelet, double b, int q, String pathData, double percentile)
-            throws IOException {
+    public static void callMainFunction(double[] wavelet, double b, int q, double[] data, double percentile){
 
-        double[] wavelet = OneDHWT.fileToArrayOfDoubles(pathWavelet);
-        double[] data = OneDHWT.fileToArrayOfDoubles(pathData);
+        //double[] wavelet = OneDHWT.fileToArrayOfDoubles(pathWavelet);
+        //double[] data = OneDHWT.fileToArrayOfDoubles(pathData);
         int[] nzArray = constructNzArray(wavelet);
         int length_1 = wavelet.length;
         int length_2 = (int)Math.rint(b * q) + 1;
@@ -302,13 +301,6 @@ public class ProbMinRelVar {
         }
 
         performCoinFlips(wavelet, chosenY);
-
-        // print to console, delete later
-        System.out.println();
-        System.out.println("Resulting wavelet:");
-        for (double v : wavelet) {
-            System.out.println(v);
-        }
     }
 
     public static void performCoinFlips(double[] wavelet, double[] chosenY){

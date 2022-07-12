@@ -28,6 +28,7 @@ public class ProbabilisticMinL2 {
         int limit = level + 1;
         double total = 0.0;
         double avail = b;
+
         double[] sqrtk = new double[wavelet.length];
         double[] roundingValues = new double[wavelet.length];
 
@@ -60,10 +61,13 @@ public class ProbabilisticMinL2 {
             }
         }
 
+        //checkpoint
+
         for(int k = r; k < sqrtk.length; k++){
             int idx = indexValuePair[k].getKey();
             if(wavelet[idx] != 0.0){
                 roundingValues[idx] = (wavelet[idx] * total) / (sqrtk[idx] * avail);
+                System.out.println(wavelet[idx] + " "+ sqrtk[idx] + " " + (wavelet[idx] * total) / (sqrtk[idx] * avail));
             }
             else{
                 roundingValues[idx] = 0.0; // check whether this is correct
@@ -71,10 +75,10 @@ public class ProbabilisticMinL2 {
         }
 
         // delete later
-        System.out.println("Rounding values:");
-        for (double roundingValue : roundingValues) {
-            System.out.println(roundingValue);
-        }
+        //System.out.println("Rounding values:");
+        //for (double roundingValue : roundingValues) {
+        //    System.out.println(roundingValue);
+        //}
 
         return roundingValues;
     }
@@ -88,10 +92,10 @@ public class ProbabilisticMinL2 {
      * @return true if rounds up, and false if rounds to zero
      */
     public static boolean roundUp(double coefficient, double lambda){
-        double randomDouble = Math.random();
-
         if(lambda == 0.0)
             return false;
+
+        double randomDouble = Math.random();
 
         double probability = coefficient / lambda;
 
@@ -114,13 +118,6 @@ public class ProbabilisticMinL2 {
                 wavelet[i] = roundingValues[i];
             else
                 wavelet[i] = 0.0;
-        }
-
-        // delete later
-        System.out.println();
-        System.out.println("Resulting wavelet:");
-        for (double v : wavelet) {
-            System.out.println(v);
         }
     }
 }

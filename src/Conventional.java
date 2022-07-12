@@ -46,7 +46,7 @@ public class Conventional {
      * @param normalizedCoeffs Normalized wavelet coefficients
      * @param b the number of coefficients to be retained
      */
-    public static void retainNCoeffs(double[] wavelet, double[] normalizedCoeffs, int b){
+    public static HashMap<Integer, Double> retainNCoeffs(double[] wavelet, double[] normalizedCoeffs, int b){
         // Populate topNValues, topNAbsNormValues, and topNIndices with the first N values, the first
         // N absolute normalized coefficients, and their corresponding indices.
         double[] topNValues = Arrays.copyOfRange(wavelet, 0, b);
@@ -92,7 +92,8 @@ public class Conventional {
         }
 
         HashMap<Integer, Double> retainedCoeffs = storeToHashMap(topNIndices, topNValues);
-        populateWavelet(retainedCoeffs, wavelet.length);
+        return retainedCoeffs;
+        //populateWavelet(retainedCoeffs, wavelet.length);
     }
 
     private static HashMap<Integer, Double> storeToHashMap(int[] topNIndices, double[] topNValues){
@@ -104,7 +105,7 @@ public class Conventional {
         return retainedCoeffs;
     }
 
-    public static void populateWavelet(HashMap<Integer, Double> coeffsMapping, int tupleCounts){
+    public static double[] populateWavelet(HashMap<Integer, Double> coeffsMapping, int tupleCounts){
         double[] conventionalHWT = new double[tupleCounts];
         for(int i = 0; i < tupleCounts; i++){
             if(coeffsMapping.containsKey(i))
@@ -113,10 +114,7 @@ public class Conventional {
                 conventionalHWT[i] = 0.0;
         }
 
-        //reconstruct all data
-        OneDHWT.orderedFastHWTInverse(conventionalHWT);
-        System.out.println();
-        OneDHWT.displayData(conventionalHWT);
+        return conventionalHWT;
 
         //Reconstruct one element
         //getOneElement(coeffsMapping, tupleCounts, 15);

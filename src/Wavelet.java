@@ -1,7 +1,12 @@
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Wavelet {
     public static void main(String[] args) throws IOException {
+
+        final int Q = 20;
+        final int PERCENTILE = 10;
 
         if(args[0].equals("generate")){
            if(args[1].equals("sequential")){
@@ -14,31 +19,80 @@ public class Wavelet {
                        Integer.parseInt(args[5]), args[6], args[7], Integer.parseInt(args[8]));
            }
         }
+
+        else if(args[0].equals("build") && args[1].equals("wavelet")){
+            double[] wavelet = OneDHWT.orderedFastHWT(args[2]);
+            OneDHWT.saveDataToFile(wavelet, args[3]);
+        }
+
+        else if(args[0].equals("wavelet")){
+            double[] wavelet = OneDHWT.orderedFastHWT(args[4]);
+
+            if(args[1].equals("conventional")){
+                // Perform normalization
+                double[] normalizedCoeffs = Conventional.normalizeCoeffs(wavelet);
+
+                // Retain B largest coefficients
+                HashMap<Integer, Double> retainedCoeffs = Conventional.retainNCoeffs(wavelet,
+                        normalizedCoeffs, Integer.parseInt(args[2]));
+
+                if(args[3].equals("full")){
+                    OneDHWT.saveDataToFile(Conventional.populateWavelet(retainedCoeffs, wavelet.length), args[5]);
+                }
+                else if(args[3].equals("summary")){
+                    int i = 0;
+                    String[] mapping = new String[retainedCoeffs.size()];
+
+                    for(Map.Entry<Integer, Double> entry : retainedCoeffs.entrySet()){
+                        mapping[i] = entry.getKey() + ", " + entry.getValue();
+                        i++;
+                    }
+
+                    OneDHWT.saveDataToFile(mapping, args[5]);
+                }
+            }
+
+            else if(args[1].equals("minL2")){
+                ProbabilisticMinL2.waveletMinL2(wavelet, Integer.parseInt(args[2]));
+                if(args[3].equals("full")){
+                    OneDHWT.saveDataToFile(wavelet, args[5]);
+                }
+                else if(args[3].equals("summary")){
+                    // Build summary
+                }
+            }
+
+            else if(args[1].equals("minRelVar")){
+                ProbMinRelVar.callMainFunction(wavelet, Integer.parseInt(args[2]), Q,
+                        OneDHWT.fileToArrayOfDoubles(args[4]), PERCENTILE);
+                if(args[3].equals("full")){
+                    OneDHWT.saveDataToFile(wavelet, args[5]);
+                }
+                else if(args[3].equals("summary")){
+                    // Build summary
+                }
+            }
+
+            else if(args[1].equals("minRelBias")){
+                ProbMinRelBias.callMainFunction(wavelet, Integer.parseInt(args[2]), Q,
+                        OneDHWT.fileToArrayOfDoubles(args[4]), PERCENTILE);
+                if(args[3].equals("full")){
+                    OneDHWT.saveDataToFile(wavelet, args[5]);
+                }
+                else if(args[3].equals("summary")){
+                    // Build summary
+                }
+            }
+        }
+
+        else if(args[0].equals("reconstruct")){
+            double[] data = OneDHWT.orderedFastHWTInverse(args[3]);
+
+            OneDHWT.saveDataToFile(data, args[4]);
+        }
         else{
             System.out.println("Enter a valid command!");
         }
-
-        /**
-        ProbMinRelBias.callMainFunction("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/wavelet/wavelet1",
-                8.0, 10, "/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/original_data/smalldata",
-                10);**/
-
-
-        /**OneDWaveletDecomp("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/original_data/smalldata",
-                "/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/wavelet/wavelet1");**/
-
-
-        /**ReconstructData("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/OneMillionWavelet",
-                "/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/ZipfDistribution2964476632319761509.txt");**/
-
-        /**
-         // Get lambda
-         System.out.println();
-         double[] wavelet = OneDHWT.fileToArrayOfDoubles("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/wavelet/wavelet1");
-         ProbabilisticMinL2.waveletMinL2(wavelet, 8);**/
-
-        /**getConventionalWavelet("/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/original_data/smalldata",
-                8, "/Users/ulfianidian/Desktop/Dissertation/1DHaar/data/wavelet/wavelet1");**/
     }
 
     public static void generateZipf(String mode, int keySpace, int totalRecords, double zParam,
@@ -56,7 +110,7 @@ public class Wavelet {
     }
 
     public static void OneDWaveletDecomp(String filePath, String writeTo) throws IOException {
-        double[] wavelet = OneDHWT.orderedFastHWT(filePath);
+        double[] wavelet = OneDHWT.orderedFastHWT2(filePath);
 
         //Print the wavelet on the console
         for (double w : wavelet) {
@@ -68,22 +122,9 @@ public class Wavelet {
 
     public static void ReconstructData(String filePath, String writeTo) throws IOException {
         double[] data = OneDHWT.orderedFastHWTInverse(filePath);
-        for(int i = 0; i < data.length; i++){
-            System.out.println(data[i]);
+        for (double datum : data) {
+            System.out.println(datum);
         }
         OneDHWT.saveDataToFile(data, writeTo);
     }
-
-    public static void getConventionalWavelet(String filePath, int b , String writeTo)
-        throws IOException {
-        double[] wavelet = OneDHWT.orderedFastHWT(filePath);
-
-        //Perform normalization
-        double[] normalizedCoeffs = Conventional.normalizeCoeffs(wavelet);
-
-        //Retain B largest coefficients
-        Conventional.retainNCoeffs(wavelet, normalizedCoeffs, b);
-        //OneDHWT.saveDataToFile(normalizedCoeffs, writeTo);
-    }
-
 }
