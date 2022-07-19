@@ -62,7 +62,6 @@ public class ProbabilisticMinL2 {
         }
 
         //checkpoint
-
         for(int k = r; k < sqrtk.length; k++){
             int idx = indexValuePair[k].getKey();
             if(wavelet[idx] != 0.0){

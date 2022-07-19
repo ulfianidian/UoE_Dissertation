@@ -1,6 +1,5 @@
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Wavelet {
     public static void main(String[] args) throws IOException {
@@ -90,6 +89,18 @@ public class Wavelet {
 
             OneDHWT.saveDataToFile(data, args[4]);
         }
+        else if(args[0].equals("get")){
+
+            if(args[1].equals("mean-relative-error")){
+                getMeanRelError(args[2], args[3], PERCENTILE);
+            }
+            else if(args[1].equals("max-relative-error")){
+                getMaxRelError(args[2], args[3], PERCENTILE);
+            }
+            else if(args[1].equals("25-percentile-relative-error")){
+                getPercentileRelativeError(args[2], args[3], PERCENTILE);
+            }
+        }
         else{
             System.out.println("Enter a valid command!");
         }
@@ -107,6 +118,81 @@ public class Wavelet {
         ZipfianGenerator zipfianGenerator = new ZipfianGenerator(mode, keySpace, totalRecords, zParam,
                 start, permutation, writeTo, gap);
         zipfianGenerator.generateZipf();
+    }
+
+    public static void getMeanRelError(String dataPath, String originalDataPath, double percentile) throws IOException{
+        double[] data = OneDHWT.orderedFastHWTInverse(dataPath);
+        double[] originalData = OneDHWT.fileToArrayOfDoubles(originalDataPath);
+        double sanityBound = findPercentile(originalData, percentile);
+
+        double sum = 0.0;
+        double curr;
+        for(int i = 0; i < data.length; i++){
+            curr = Math.abs(data[i] - originalData[i])/Math.max(originalData[i], sanityBound);
+            sum = sum + curr;
+        }
+
+        double error = sum / data.length;
+        System.out.println("Mean relative error: " + error);
+    }
+
+    public static void getMaxRelError(String dataPath, String originalDataPath, double percentile) throws IOException{
+        double[] data = OneDHWT.orderedFastHWTInverse(dataPath);
+        double[] originalData = OneDHWT.fileToArrayOfDoubles(originalDataPath);
+        double sanityBound = findPercentile(originalData, percentile);
+
+        double max = 0.0;
+        double curr = 0.0;
+
+        for(int i = 0; i < data.length; i++){
+            curr = Math.abs(data[i] - originalData[i])/Math.max(originalData[i], sanityBound);
+            if(curr > max){
+                max = curr;
+            }
+        }
+
+        System.out.println("Maximum relative error: " + max);
+    }
+
+    public static void getPercentileRelativeError(String dataPath, String originalDataPath, double percentile)
+            throws IOException{
+        double[] data = OneDHWT.orderedFastHWTInverse(dataPath);
+        double[] originalData = OneDHWT.fileToArrayOfDoubles(originalDataPath);
+        double sanityBound = findPercentile(originalData, percentile);
+        double curr;
+
+        List<Double> error = new ArrayList<>();
+        for(int i = 0; i < data.length; i++){
+            curr = Math.abs(data[i] - originalData[i])/Math.max(originalData[i], sanityBound);
+            error.add(curr);
+        }
+
+        Collections.sort(error);
+
+        if(percentile == 0.0){
+            System.out.println("25-percentile relative error: " + error.get(0));
+        }
+
+        int index = (int)Math.ceil((75 / 100.0) * error.size());
+
+        System.out.println("25-percentile relative error: " + error.get(index - 1));
+    }
+
+    public static double findPercentile(double[] data, double percentile){
+        List<Double> sortedData = new ArrayList<>();
+        for (double datum : data) {
+            sortedData.add(datum);
+        }
+
+        Collections.sort(sortedData);
+
+        if(percentile == 0.0){
+            return sortedData.get(0);
+        }
+
+        int index = (int)Math.ceil((percentile / 100.0) * sortedData.size());
+
+        return sortedData.get(index - 1);
     }
 
     public static void OneDWaveletDecomp(String filePath, String writeTo) throws IOException {

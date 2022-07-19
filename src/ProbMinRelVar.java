@@ -164,7 +164,7 @@ public class ProbMinRelVar {
      * @param nzArray an array that consists of the number of nonzero coefficients rooted at each subtree
      * @param data the data
      * @param percentile percentile
-     * @return An array of 'form' of each node
+     * @return An array of 'norm' of each node
      */
     public static double[] perturbAndCalcNorm(double[] wavelet, int[] nzArray, double[] data, double percentile){
         double nthPercentile = findPercentile(data, percentile);
@@ -183,7 +183,7 @@ public class ProbMinRelVar {
                                        double[][] mValues, double[][] yValues, double[][] leftAllot,
                                        boolean[][] checked){
 
-        int indexB = (int)Math.rint(B * q);
+        int indexB = (int)(B * q);
 
         if(root > wavelet.length - 1 || B - (double)nzArray[root] >= 1e-6) // was  { nzArray[root] <= B }
             return 0;
@@ -241,11 +241,9 @@ public class ProbMinRelVar {
 
     public static void callMainFunction(double[] wavelet, double b, int q, double[] data, double percentile){
 
-        //double[] wavelet = OneDHWT.fileToArrayOfDoubles(pathWavelet);
-        //double[] data = OneDHWT.fileToArrayOfDoubles(pathData);
         int[] nzArray = constructNzArray(wavelet);
         int length_1 = wavelet.length;
-        int length_2 = (int)Math.rint(b * q) + 1;
+        int length_2 = (int)(b * q) + 1; //(int)Math.rint(b * q) + 1
         double[] norm = perturbAndCalcNorm(wavelet, nzArray, data, percentile);
         double[][] mValues = new double[length_1][length_2];
         double[][] yValues = new double[length_1][length_2];
@@ -255,7 +253,8 @@ public class ProbMinRelVar {
         double root;
         double rootSpace;
 
-        mValues[0][(int)Math.rint(b * q)] = Double.POSITIVE_INFINITY;
+        mValues[0][(int)(b * q)] = Double.POSITIVE_INFINITY;
+
         for(int l = 1; l <= q; l++){
             if(wavelet[0] == 0.0){
                 root = 0;
@@ -287,6 +286,14 @@ public class ProbMinRelVar {
         double[] chosenY = new double[length_1];
         double[] bValue = new double[length_1];
 
+//        for(int i = 0; i < 180; i++){
+//            System.out.print(i + " ");
+//            for(int j = 0; j < length_1; j++){
+//                System.out.print(checked[j][i] + "\t");
+//            }
+//            System.out.println();
+//        }
+
         bValue[0] = b;
 
         chosenY[0] = yValues[0][(int)(b * q)];
@@ -298,6 +305,10 @@ public class ProbMinRelVar {
                 bValue[i * 2] = leftAllot[i][(int)(Math.round(bValue[i] * q))];
                 bValue[i * 2 + 1] = bValue[i] - bValue[i * 2] - chosenY[i];
             }
+        }
+
+        for(int i = 0; i < length_1; i++){
+            System.out.println(nzArray[i]);
         }
 
         performCoinFlips(wavelet, chosenY);

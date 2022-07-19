@@ -1,5 +1,3 @@
-import java.io.IOException;
-
 /**
  * @author Ulfiani Primawati
  *
@@ -27,11 +25,7 @@ public class ProbMinRelBias {
         return norm;
     }
 
-    public static void callMainFunction(double[] wavelet, double b, int q, double[] data, double percentile)
-            throws IOException {
-
-        //double[] wavelet = OneDHWT.fileToArrayOfDoubles(pathWavelet);
-        //double[] data = OneDHWT.fileToArrayOfDoubles(pathData);
+    public static void callMainFunction(double[] wavelet, double b, int q, double[] data, double percentile){
         int[] nzArray = ProbMinRelVar.constructNzArray(wavelet);
         int length_1 = wavelet.length;
         int length_2 = (int)Math.round(b * q) + 1;
