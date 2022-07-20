@@ -66,18 +66,19 @@ public class ProbabilisticMinL2 {
             int idx = indexValuePair[k].getKey();
             if(wavelet[idx] != 0.0){
                 roundingValues[idx] = (wavelet[idx] * total) / (sqrtk[idx] * avail);
-                System.out.println(wavelet[idx] + " "+ sqrtk[idx] + " " + (wavelet[idx] * total) / (sqrtk[idx] * avail));
+                //System.out.println(wavelet[idx] + " "+ sqrtk[idx] + " " + (wavelet[idx] * total) / (sqrtk[idx] * avail));
             }
             else{
                 roundingValues[idx] = 0.0; // check whether this is correct
             }
         }
 
-        // delete later
-        //System.out.println("Rounding values:");
-        //for (double roundingValue : roundingValues) {
-        //    System.out.println(roundingValue);
-        //}
+//        System.out.println(wavelet[0] / roundingValues[0]);
+//        System.out.println();
+//        System.out.println("Rounding values:");
+//        for (double roundingValue : roundingValues) {
+//            System.out.println(roundingValue);
+//        }
 
         return roundingValues;
     }
