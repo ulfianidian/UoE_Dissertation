@@ -4,7 +4,7 @@ import java.util.*;
 public class Wavelet {
     public static void main(String[] args) throws IOException {
 
-        final int Q = 19;
+        final int Q = 200;
         final int PERCENTILE = 10;
 
         if(args[0].equals("generate")){
@@ -62,7 +62,7 @@ public class Wavelet {
             }
 
             else if(args[1].equals("minRelVar")){
-                ProbMinRelVar.callMainFunction2(wavelet, Integer.parseInt(args[2]), Q,
+                ProbMinRelVar.callMainFunction(wavelet, Integer.parseInt(args[2]), Q,
                         OneDHWT.fileToArrayOfDoubles(args[4]), PERCENTILE);
                 if(args[3].equals("full")){
                     OneDHWT.saveDataToFile(wavelet, args[5]);
