@@ -1,6 +1,5 @@
 import java.util.*;
 import cern.colt.matrix.impl.SparseObjectMatrix2D;
-import org.apache.commons.math3.analysis.function.Min;
 
 /**
  * @author Ulfiani Primawati
@@ -319,12 +318,20 @@ public class ProbMinRelVar {
 
         int indexB = (int)Math.rint(B * q);
 
-        if(root > wavelet.length - 1 || B - (double)nzArray[root] >= 1e-6) // was  { nzArray[root] <= B }
+        if(root > wavelet.length - 1 || B - (double)nzArray[root] >= 1e-6) { // was  { nzArray[root] <= B }
+            if(root == 526)
+                System.out.println("root 526 " + B + " " + nzArray[root] + " enough space");
             return 0;
+        }
 
-        if(nzArray[root] > B * q)
+        if(nzArray[root] > B * q) {
+            if (root == 526)
+                System.out.println("root 526 " + B + " not enough space");
             return Double.POSITIVE_INFINITY;
+        }
 
+        if(root == 526)
+            System.out.println("root 526 " + B + " calculate NSE");
         if(checked[root][indexB])
             return mValues[root][indexB];
 
@@ -420,13 +427,13 @@ public class ProbMinRelVar {
         double[] chosenY = new double[length_1];
         double[] bValue = new double[length_1];
 
-        for(int i = 0; i < length_2; i++){
-            System.out.print(i + " ");
-            for(int j = 0; j < length_1; j++){
-                System.out.print(yValues[j][i] + "\t");
-            }
-            System.out.println();
-        }
+//        for(int i = 0; i < length_2; i++){
+//            System.out.print(i + " ");
+//            for(int j = 0; j < length_1; j++){
+//                System.out.print(yValues[j][i] + "\t");
+//            }
+//            System.out.println();
+//        }
 
         bValue[0] = b;
 
@@ -441,11 +448,15 @@ public class ProbMinRelVar {
             }
         }
 
+        double sum = 0;
         for(int i = 0; i < length_1; i++){
             System.out.println(chosenY[i]);
+            sum += chosenY[i];
         }
 
         performCoinFlips(wavelet, chosenY);
+        System.out.println();
+        System.out.println(bValue[526]);
     }
 
     public static void performCoinFlips(double[] wavelet, double[] chosenY){
@@ -473,7 +484,7 @@ public class ProbMinRelVar {
 
         int indexB = (int)Math.rint(b * q);
 
-        if(root > wavelet.length - 1 || b - (double)nzArray[root] >= 1e-6) // was  { nzArray[root] <= B }
+        if(root > wavelet.length - 1 || b - (double)nzArray[root] >= 0)// was  { nzArray[root] <= B } 1e-6
             return 0;
 
         if(nzArray[root] > indexB)
@@ -506,7 +517,7 @@ public class ProbMinRelVar {
                 rootSpace = (double)l / (double)q;
             }
 
-            for(int _b = 0; _b <= indexB - l; _b++){
+            for(int _b = 0; _b <= indexB - (int)Math.rint(rootSpace * q); _b++){
                 double __b = (double)_b / (double)q;
                 double left = getOptimalNSE3(wavelet, __b, q, 2 * root,
                         nzArray, norm, objectMatrix2D);
@@ -529,8 +540,8 @@ public class ProbMinRelVar {
     public static void callMainFunction3(double[] wavelet, double b, int q, double[] data, double percentile){
 
         int[] nzArray = constructNzArray(wavelet);
-        int length_1 = wavelet.length;                  // column (number of roots)
-        int length_2 = (int)Math.rint(b * q) + 1;       // row
+        int length_1 = wavelet.length;                                                      // column (number of roots)
+        int length_2 = (int)Math.rint(b * q) + 1;                                           // row
         double[] norm = perturbAndCalcNorm(wavelet, nzArray, data, percentile);
         SparseObjectMatrix2D objectMatrix2D = new SparseObjectMatrix2D(length_2, length_1);
 
@@ -552,7 +563,7 @@ public class ProbMinRelVar {
                 rootSpace = (double)l / (double)q;
             }
 
-            for(int _b = 0; _b <= (int)Math.rint(b * q) - l; _b++){
+            for(int _b = 0; _b <= (int)Math.rint(b * q) - (int)Math.rint(rootSpace * q); _b++){
                 double __b = (double)_b / (double)q;
                 double next = getOptimalNSE3(wavelet, __b, q, 1,
                         nzArray, norm, objectMatrix2D);
@@ -570,32 +581,39 @@ public class ProbMinRelVar {
         double[] chosenY = new double[length_1];
         double[] bValue = new double[length_1];
 
-//        for(int i = 0; i < length_2; i++){
-//            System.out.print(i + " ");
-//            for(int j = 0; j < length_1; j++){
-//                System.out.print(yValues[j][i] + "\t");
-//            }
-//            System.out.println();
-//        }
-
         bValue[0] = b;
 
         chosenY[0] = ((MinNSE)objectMatrix2D.getQuick(row, column)).getyValue();
         bValue[1] = ((MinNSE)objectMatrix2D.getQuick(row, column)).getLeftAllot();
 
+
         for(int i = 1; i < length_1; i++){
             int ithRow = (int)(Math.rint(bValue[i] * q));
-            chosenY[i] = ((MinNSE)objectMatrix2D.getQuick(ithRow, i)).getyValue();
+            if(objectMatrix2D.getQuick(ithRow, i) == null) {
+                chosenY[i] = 0;
+            }
+            else
+                chosenY[i] = ((MinNSE)objectMatrix2D.getQuick(ithRow, i)).getyValue();
+
             if(i * 2 < length_1) {
-                bValue[i * 2] = ((MinNSE)objectMatrix2D.getQuick(ithRow, i)).getLeftAllot();
+                if(objectMatrix2D.getQuick(ithRow, i) == null)
+                    bValue[i * 2] = 0;
+                else
+                    bValue[i * 2] = ((MinNSE)objectMatrix2D.getQuick(ithRow, i)).getLeftAllot();
                 bValue[i * 2 + 1] = bValue[i] - bValue[i * 2] - chosenY[i];
             }
         }
 
+        double sum = 0;
         for(int i = 0; i < length_1; i++){
-            System.out.println(chosenY[i]);
+            if (i < 1000) {
+                System.out.println(i + " " + chosenY[i]);
+            }
+            sum += chosenY[i];
         }
 
         performCoinFlips(wavelet, chosenY);
+        System.out.println();
+        System.out.println(sum);
     }
 }

@@ -1,10 +1,13 @@
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
 
 public class Wavelet {
     public static void main(String[] args) throws IOException {
 
-        final int Q = 200;
+        final int Q = 10;
         final int PERCENTILE = 10;
 
         if(args[0].equals("generate")){
@@ -62,7 +65,7 @@ public class Wavelet {
             }
 
             else if(args[1].equals("minRelVar")){
-                ProbMinRelVar.callMainFunction(wavelet, Integer.parseInt(args[2]), Q,
+                ProbMinRelVar.callMainFunction3(wavelet, Integer.parseInt(args[2]), Q,
                         OneDHWT.fileToArrayOfDoubles(args[4]), PERCENTILE);
                 if(args[3].equals("full")){
                     OneDHWT.saveDataToFile(wavelet, args[5]);
@@ -101,6 +104,35 @@ public class Wavelet {
                 getPercentileRelativeError(args[2], args[3], PERCENTILE);
             }
         }
+
+        else if(args[0].equals("sort")){
+            FileInputStream fileStream = new FileInputStream(args[1]);
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fileStream));
+            ArrayList<Double> arrayOfDoubles = new ArrayList<>();
+
+            //Read the file, line by line
+            String stringLine;
+            while((stringLine = bufferedReader.readLine()) != null){
+                //Print the value on the console
+                arrayOfDoubles.add(Double.valueOf(stringLine));
+            }
+
+            //Close the input stream
+            bufferedReader.close();
+
+            Collections.sort(arrayOfDoubles);
+
+            double[] doublePrims = new double[arrayOfDoubles.size()];
+            int i = 0;
+            for(Double d: arrayOfDoubles){
+                doublePrims[i++] = d.doubleValue();
+            }
+
+            arrayOfDoubles = null;
+
+            OneDHWT.saveDataToFile(doublePrims, args[2]);
+        }
+
         else{
             System.out.println("Enter a valid command!");
         }
