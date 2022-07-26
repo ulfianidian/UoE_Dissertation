@@ -65,7 +65,7 @@ public class Wavelet {
             }
 
             else if(args[1].equals("minRelVar")){
-                ProbMinRelVar.callMainFunction3(wavelet, Integer.parseInt(args[2]), Q,
+                ProbMinRelVar.callMainFunction(wavelet, Integer.parseInt(args[2]), Q,
                         OneDHWT.fileToArrayOfDoubles(args[4]), PERCENTILE);
                 if(args[3].equals("full")){
                     OneDHWT.saveDataToFile(wavelet, args[5]);

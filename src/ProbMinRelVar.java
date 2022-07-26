@@ -427,13 +427,13 @@ public class ProbMinRelVar {
         double[] chosenY = new double[length_1];
         double[] bValue = new double[length_1];
 
-//        for(int i = 0; i < length_2; i++){
-//            System.out.print(i + " ");
-//            for(int j = 0; j < length_1; j++){
-//                System.out.print(yValues[j][i] + "\t");
-//            }
-//            System.out.println();
-//        }
+        for(int i = 0; i < length_2; i++){
+            //System.out.print(i + " ");
+            for(int j = 0; j < length_1; j++){
+                System.out.print(mValues[j][i] + "\t");
+            }
+            System.out.println();
+        }
 
         bValue[0] = b;
 
@@ -455,8 +455,6 @@ public class ProbMinRelVar {
         }
 
         performCoinFlips(wavelet, chosenY);
-        System.out.println();
-        System.out.println(bValue[526]);
     }
 
     public static void performCoinFlips(double[] wavelet, double[] chosenY){
@@ -606,14 +604,14 @@ public class ProbMinRelVar {
 
         double sum = 0;
         for(int i = 0; i < length_1; i++){
-            if (i < 1000) {
-                System.out.println(i + " " + chosenY[i]);
-            }
+//            if (i < 1000) {
+//                System.out.println(i + " " + chosenY[i]);
+//            }
             sum += chosenY[i];
         }
 
         performCoinFlips(wavelet, chosenY);
-        System.out.println();
-        System.out.println(sum);
+        System.out.println("sum " + sum);
+        System.out.println(nzArray[0]);
     }
 }
