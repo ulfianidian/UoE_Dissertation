@@ -1,3 +1,6 @@
+import cern.colt.matrix.impl.SparseObjectMatrix2D;
+import org.apache.commons.math3.analysis.function.Min;
+
 /**
  * @author Ulfiani Primawati
  *
@@ -16,10 +19,17 @@ public class ProbMinRelBias {
     public static double[] perturbAndCalcNorm(double[] wavelet, int[] nzArray, double[] data, double percentile){
         double nthPercentile = ProbMinRelVar.findPercentile(data, percentile);
         double[] minValues = ProbMinRelVar.applyPerturbationRule(wavelet, nzArray, data, nthPercentile);
-        double[] norm = new double[wavelet.length];
+        double[] norm = new double[2 * wavelet.length];
 
         for(int i = 0; i < wavelet.length; i++){
             norm[i] = Math.max(Math.abs(minValues[i]), nthPercentile);
+        }
+
+        // Added this
+        for(int i = wavelet.length; i < norm.length; i++){
+            int j = 0;
+            norm[i] = Math.max(Math.abs(data[j]), nthPercentile);
+            j++;
         }
 
         return norm;
@@ -91,7 +101,14 @@ public class ProbMinRelBias {
         // Perform coin flips
         performCoinFlips(wavelet, chosenY);
 
-        for(double w : wavelet) {
+        double sum = 0;
+        for(double y : chosenY)
+            sum += y;
+
+        System.out.println(sum);
+        System.out.println();
+
+        for(double w : chosenY) {
             System.out.println(w);
         }
     }
@@ -172,5 +189,163 @@ public class ProbMinRelBias {
 
         checked[root][indexB] = true;
         return mValues[root][indexB];
+    }
+
+    public static double getOptimalNormBias(double[] wavelet, double b, int q, int root,
+                                            int[] nzArray, double[] norm, SparseObjectMatrix2D objectMatrix2D){
+
+        int indexB = (int)Math.rint(b * q);
+
+        if(root > wavelet.length - 1 || b - (double)nzArray[root] >= 0)
+            return 0;
+
+//        if(nzArray[root] > b * q)
+//            return Double.POSITIVE_INFINITY;
+
+        if(!(objectMatrix2D.getQuick(indexB, root) == null))
+            return ((MinNSE)objectMatrix2D.getQuick(indexB, root)).getmValue();
+
+        MinNSE obj = new MinNSE(Double.POSITIVE_INFINITY, 0, 0);
+        objectMatrix2D.setQuick(indexB, root, obj);
+
+        double rootLeft;
+        double rootRight;
+        double rootSpace;
+
+        for(int l = 0; l <= q; l++){
+            if(wavelet[root] == 0.0){
+                rootLeft = 0.0;
+                rootRight = 0.0;
+                rootSpace = 0.0;
+            }
+//            else if(2 * root > wavelet.length - 1){
+//                rootSpace = (double)l / (double)q;
+//                rootLeft = ((1.0 - rootSpace) * Math.abs(wavelet[root])) / norm[root];
+//                rootRight = rootLeft;
+//            }
+            else{
+                rootSpace = (double)l / (double)q;
+                rootLeft = ((1.0 - rootSpace) * Math.abs(wavelet[root])) / norm[2 * root];
+                rootRight = ((1.0 - rootSpace) * Math.abs(wavelet[root])) / norm[2 * root + 1];
+            }
+
+            for(int _b = 0; _b <= indexB - (int)Math.rint(rootSpace * q); _b++){
+                double __b = (double)_b / (double)q;
+                double left = getOptimalNormBias(wavelet, __b, q, 2 * root,
+                        nzArray, norm, objectMatrix2D);
+                double right = getOptimalNormBias(wavelet, b - rootSpace - __b, q, 2 * root + 1,
+                        nzArray, norm, objectMatrix2D);
+                double max = Math.max(rootLeft + left, rootRight + right);
+
+                if(max < ((MinNSE)objectMatrix2D.getQuick(indexB, root)).getmValue()){
+                    MinNSE newObj = new MinNSE(max, rootSpace, __b);
+                    objectMatrix2D.setQuick(indexB, root, newObj);
+                }
+            }
+
+            if(wavelet[root] == 0)
+                break;
+        }
+
+        return ((MinNSE)objectMatrix2D.getQuick(indexB, root)).getmValue();
+    }
+
+    public static void callMainFunction1(double[] wavelet, double b, int q, double[] data, double percentile){
+
+        long startingTime = System.currentTimeMillis();
+
+        int[] nzArray = ProbMinRelVar.constructNzArray(wavelet);
+        int length_1 = wavelet.length;
+        int length_2 = (int)Math.round(b * q) + 1;
+        double[] norm = perturbAndCalcNorm(wavelet, nzArray, data, percentile);
+
+        SparseObjectMatrix2D objectMatrix2D = new SparseObjectMatrix2D(length_2, length_1);
+
+        // Calculate optimal value for j = overall root of the tree
+        double root;
+        double rootSpace;
+        int row = (int)Math.rint(b * q);
+        int column = 0;
+
+        MinNSE obj = new MinNSE(Double.POSITIVE_INFINITY, 0, 0);
+        objectMatrix2D.setQuick(row, column, obj);
+
+        for(int l = 1; l <= q; l++){
+            if(wavelet[0] == 0.0){
+                root = 0;
+                rootSpace = 0;
+            }
+            else{
+                rootSpace = (double)l / (double)q;
+                root = ((1.0 - rootSpace) * Math.abs(wavelet[0])) / norm[1];
+            }
+
+            for(int _b = 0; _b <= (int)Math.rint(b * q) - (int)Math.rint(rootSpace * q); _b++){
+                double __b = (double)_b / (double)q;
+                double next = getOptimalNormBias(wavelet, __b, q, 1,
+                        nzArray, norm, objectMatrix2D);
+                if(root + next <= ((MinNSE)objectMatrix2D.getQuick(row, column)).getmValue()){
+                    MinNSE newObj = new MinNSE(root + next, rootSpace, __b);
+                    objectMatrix2D.setQuick(row, column, newObj);
+                }
+            }
+
+            if(wavelet[0] == 0.0)
+                break;
+        }
+
+        // Put all optimal y values for each coefficient in an array
+        double[] chosenY = new double[length_1];
+        double[] bValue = new double[length_1];
+
+        bValue[0] = b;
+
+        chosenY[0] = ((MinNSE)objectMatrix2D.getQuick(row, column)).getyValue();
+        bValue[1] = ((MinNSE)objectMatrix2D.getQuick(row, column)).getLeftAllot();
+
+        // Print mValue, yValue, leftAllot
+//        for(int i = 0; i < length_2; i++){
+//            //System.out.print(i + " ");
+//            for(int j = 0; j < length_1; j++){
+//                if(!(objectMatrix2D.getQuick(i, j) == null)) {
+//                    MinNSE store = (MinNSE) objectMatrix2D.getQuick(i, j);
+//                    System.out.print(store.getmValue() + "\t" + store.getyValue() + "\t" + store.getLeftAllot() + "\t");
+//                }
+//                else
+//                    System.out.print(0 + "\t" + 0 + "\t" + 0 + "\t");
+//            }
+//            System.out.println();
+//        }
+
+
+        for(int i = 1; i < length_1; i++){
+            int ithRow = (int)(Math.rint(bValue[i] * q));
+            if(objectMatrix2D.getQuick(ithRow, i) == null) {
+                chosenY[i] = 1;
+                System.out.println("coefficient " + wavelet[i]);
+            }
+            else
+                chosenY[i] = ((MinNSE)objectMatrix2D.getQuick(ithRow, i)).getyValue();
+
+            if(i * 2 < length_1) {
+                if(objectMatrix2D.getQuick(ithRow, i) == null)
+                    bValue[i * 2] = 1;
+                else
+                    bValue[i * 2] = ((MinNSE)objectMatrix2D.getQuick(ithRow, i)).getLeftAllot();
+                bValue[i * 2 + 1] = bValue[i] - bValue[i * 2] - chosenY[i];
+            }
+        }
+
+        double sum = 0;
+        for(int i = 0; i < length_1; i++){
+            //System.out.println(chosenY[i]);
+            sum += chosenY[i];
+        }
+
+        performCoinFlips(wavelet, chosenY);
+        System.out.println("sum " + sum);
+
+        System.out.println("Time for executing: " +
+                (System.currentTimeMillis() - startingTime) + "milliseconds.");
     }
 }

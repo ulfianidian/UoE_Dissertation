@@ -158,7 +158,7 @@ public class ProbMinRelVar {
 
     /**
      * This method will call the applyPerturbationRule method, the resulting wavelet
-     * then can be used to apply the MinRelVal algorithm.
+     * then can be used to apply the MinRelVar algorithm.
      * @param wavelet the wavelet
      * @param nzArray an array that consists of the number of nonzero coefficients rooted at each subtree
      * @param data the data
