@@ -168,147 +168,18 @@ public class ProbMinRelVar {
     public static double[] perturbAndCalcNorm(double[] wavelet, int[] nzArray, double[] data, double percentile){
         double nthPercentile = findPercentile(data, percentile);
         double[] minValues = applyPerturbationRule(wavelet, nzArray, data, nthPercentile);
-        double[] norm = new double[wavelet.length];
+        double[] norm = new double[2 * wavelet.length];
 
         for(int i = 0; i < wavelet.length; i++){
             norm[i] = Math.max(Math.pow(minValues[i], 2.0), Math.pow(nthPercentile, 2.0));
         }
 
+        int j = 0;
+        for(int i = wavelet.length; i < norm.length; i++) {
+            norm[i] = Math.max(Math.pow(data[j], 2.0), Math.pow(nthPercentile, 2.0));
+        }
+
         return norm;
-    }
-
-    public static double getOptimalNSE2(double[] wavelet, double B, int q, int root,
-                                       int[] nzArray, double[] norm,
-                                       HashMap<Coordinates, MinNSE> minNSEMap){
-
-        int indexB = (int)Math.rint(B * q);
-
-        if(root > wavelet.length - 1 || B - (double)nzArray[root] >= 1e-6)
-            return 0;
-
-        if(nzArray[root] > indexB)
-            return Double.POSITIVE_INFINITY;
-
-        Coordinates coordinate = new Coordinates(root, indexB);
-        if(minNSEMap.containsKey(coordinate)) {
-            return minNSEMap.get(coordinate).getmValue();
-        }
-
-        System.out.println("Calculate " + root + ", " + (int)Math.rint(B * q));
-        MinNSE storeObj = new MinNSE(Double.POSITIVE_INFINITY, 0.0, 0.0);
-        minNSEMap.put(coordinate, storeObj);
-
-        double rootLeft;
-        double rootRight;
-        double rootSpace;
-
-        for(int l = 1; l <= q; l++){
-            if(wavelet[root] == 0){
-                rootLeft = 0.0;
-                rootRight = 0.0;
-                rootSpace = 0.0;
-            }
-
-            else if(2 * root > wavelet.length - 1){
-                rootLeft = (q - l) * Math.pow(wavelet[root], 2.0) / (l * norm[root]);
-                rootRight = rootLeft;
-                rootSpace = (double)l / (double)q;
-            }
-            else{
-                rootLeft = (q - l) * Math.pow(wavelet[root], 2.0) / (l * norm[2 * root]);
-                rootRight = (q - l) * Math.pow(wavelet[root], 2.0) / (l * norm[2 * root + 1]);
-                rootSpace = (double)l / (double)q;
-            }
-
-            for(int _b = 0; _b <= indexB - l; _b++){
-                double __b = (double)_b / (double) q;
-                double left = getOptimalNSE2(wavelet, __b, q, 2 * root, nzArray, norm, minNSEMap);
-                double right = getOptimalNSE2(wavelet, B - rootSpace - __b, q, 2 * root + 1,
-                        nzArray, norm, minNSEMap);
-                double max = Math.max(rootLeft + left, rootRight + right);
-                if(max < minNSEMap.get(coordinate).getmValue()){
-                    minNSEMap.get(coordinate).setmValue(max);
-                    minNSEMap.get(coordinate).setyValue(rootSpace);
-                    minNSEMap.get(coordinate).setLeftAllot(__b);
-                }
-            }
-
-            if(wavelet[root] == 0)
-                break;
-        }
-
-        return minNSEMap.get(coordinate).getmValue();
-    }
-
-    public static void callMainFunction2(double[] wavelet, double b, int q, double[] data, double percentile){
-        System.out.println("Construct nzArray...");
-        int[] nzArray = constructNzArray(wavelet);
-        System.out.println("Perform perturbation rule and calculate norm(i)...");
-        double[] norm = perturbAndCalcNorm(wavelet, nzArray, data, percentile);
-
-        System.out.println("Build mapping...");
-        HashMap<Coordinates, MinNSE> minNSEMap = new HashMap<>();
-
-        double root;
-        double rootSpace;
-
-        Coordinates coordinate = new Coordinates(0, (int)b * q);
-        MinNSE storeObj = new MinNSE(Double.POSITIVE_INFINITY, 0.0, 0.0);
-        minNSEMap.put(coordinate, storeObj);
-
-        for(int l = 1; l <= q; l++){
-            if(wavelet[0] == 0.0){
-                root = 0.0;
-                rootSpace = 0.0;
-            }
-            else{
-                root = (q - l) * Math.pow(wavelet[0], 2.0) / (l * norm[1]);
-                rootSpace = (double)l / (double)q;
-            }
-
-            for(int _b = 0; _b <= (int)Math.rint(b * q) - l; _b++){
-                double __b = (double)_b / (double)q;
-                double next = getOptimalNSE2(wavelet, __b, q, 1, nzArray, norm, minNSEMap);
-                if(root + next < minNSEMap.get(coordinate).getmValue()){
-                    minNSEMap.get(coordinate).setmValue(root + next);
-                    minNSEMap.get(coordinate).setyValue(rootSpace);
-                    minNSEMap.get(coordinate).setLeftAllot(__b);
-                }
-            }
-
-            if(wavelet[0] == 0.0)
-                break;
-        }
-
-        // Put all optimal y values for each coefficient in an array
-        System.out.println("Build probability array...");
-        double[] chosenY = new double[wavelet.length];
-        double[] bValue = new double[wavelet.length];
-
-        bValue[0] = b;
-
-        chosenY[0] = minNSEMap.get(coordinate).getyValue();
-        bValue[1] = minNSEMap.get(coordinate).getLeftAllot();
-
-
-        for(int i = 1; i < chosenY.length; i++){
-            Coordinates position = new Coordinates(i, (int)Math.rint(bValue[i] * q));
-            if(minNSEMap.containsKey(position))
-                chosenY[i] = minNSEMap.get(position).getyValue();
-            if(i * 2 < chosenY.length){
-                if(minNSEMap.containsKey(position)) {
-                    bValue[i * 2] = minNSEMap.get(position).getLeftAllot();
-                    bValue[i * 2 + 1] = bValue[i] - bValue[i * 2] - chosenY[i];
-                }
-            }
-        }
-
-        System.out.println();
-        for (double v : chosenY) {
-            System.out.println(v);
-        }
-
-        performCoinFlips(wavelet, chosenY);
     }
 
     public static double getOptimalNSE(double[] wavelet, double B, int q, int root,
@@ -613,5 +484,149 @@ public class ProbMinRelVar {
         performCoinFlips(wavelet, chosenY);
         System.out.println("sum " + sum);
         System.out.println(nzArray[0]);
+    }
+
+    public static double getOptimalNSE2(double[] wavelet, double b, int q, int root,
+                                        int[] nzArray, double[] norm,
+                                        SparseObjectMatrix2D objectMatrix2D){
+
+        int indexB = (int)Math.rint(b * q);
+
+        if(root > wavelet.length - 1 || b - (double)nzArray[root] >= 0)// was  { nzArray[root] <= B } 1e-6
+            return 0;
+
+        if(!(objectMatrix2D.getQuick(indexB, root) == null))
+            return ((MinNSE)objectMatrix2D.getQuick(indexB, root)).getmValue();
+
+        MinNSE obj = new MinNSE(Double.POSITIVE_INFINITY, 0, 0);
+        objectMatrix2D.setQuick(indexB, root, obj);
+
+        double rootLeft;
+        double rootRight;
+        double rootSpace;
+
+        for(int l = 0; l <= q; l++){
+            if(wavelet[root] == 0){
+                rootLeft = 0.0;
+                rootRight = 0.0;
+                rootSpace = 0.0;
+            }
+
+            else{
+                if(l == 0){
+                    rootLeft = Math.pow(wavelet[root], 2.0) / norm[2 * root];
+                    rootRight = Math.pow(wavelet[root], 2.0) / norm[2 * root + 1];
+                }
+                else {
+                    rootLeft = (q - l) * Math.pow(wavelet[root], 2.0) / (l * norm[2 * root]);
+                    rootRight = (q - l) * Math.pow(wavelet[root], 2.0) / (l * norm[2 * root + 1]);
+                }
+                rootSpace = (double)l / (double)q;
+            }
+
+            for(int _b = 0; _b <= indexB - (int)Math.rint(rootSpace * q); _b++){
+                double __b = (double)_b / (double)q;
+                double left = getOptimalNSE2(wavelet, __b, q, 2 * root,
+                        nzArray, norm, objectMatrix2D);
+                double right = getOptimalNSE2(wavelet, b - rootSpace - __b, q, 2 * root + 1,
+                        nzArray, norm, objectMatrix2D);
+                double max = Math.max(rootLeft + left, rootRight + right);
+                if(max < ((MinNSE)objectMatrix2D.getQuick(indexB, root)).getmValue()){
+                    MinNSE newObj = new MinNSE(max, rootSpace, __b);
+                    objectMatrix2D.setQuick(indexB, root, newObj);
+                }
+            }
+
+            if(wavelet[root] == 0){
+                break;
+            }
+        }
+        return ((MinNSE)objectMatrix2D.getQuick(indexB, root)).getmValue();
+    }
+
+    public static double[] callMainFunction2(double[] wavelet, double b, int q, double[] data, double percentile){
+
+        int[] nzArray = constructNzArray(wavelet);
+        int length_1 = wavelet.length;                                                      // column (number of roots)
+        int length_2 = (int)Math.rint(b * q) + 1;                                           // row
+        double[] norm = perturbAndCalcNorm(wavelet, nzArray, data, percentile);
+
+        SparseObjectMatrix2D objectMatrix2D = new SparseObjectMatrix2D(length_2, length_1);
+
+        double root;
+        double rootSpace;
+
+        int row = (int)Math.rint(b * q);
+        int column = 0;
+
+        MinNSE obj = new MinNSE(Double.POSITIVE_INFINITY, 0, 0);
+        objectMatrix2D.setQuick(row, column, obj);
+
+        for(int l = 1; l <= q; l++){
+            if(wavelet[0] == 0.0){
+                root = 0;
+                rootSpace = 0;
+            }
+            else{
+                root = (q - l) * Math.pow(wavelet[0], 2.0) / (l * norm[1]);
+                rootSpace = (double)l / (double)q;
+            }
+
+            for(int _b = 0; _b <= (int)Math.rint(b * q) - (int)Math.rint(rootSpace * q); _b++){
+                double __b = (double)_b / (double)q;
+                double next = getOptimalNSE2(wavelet, __b, q, 1,
+                        nzArray, norm, objectMatrix2D);
+                if(root + next <= ((MinNSE)objectMatrix2D.getQuick(row, column)).getmValue()){
+                    MinNSE newObj = new MinNSE(root + next, rootSpace, __b);
+                    objectMatrix2D.setQuick(row, column, newObj);
+                }
+            }
+
+            if(wavelet[0] == 0.0)
+                break;
+        }
+
+        // Put all optimal y values for each coefficient in an array
+        double[] chosenY = new double[length_1];
+        double[] bValue = new double[length_1];
+
+        bValue[0] = b;
+
+        chosenY[0] = ((MinNSE)objectMatrix2D.getQuick(row, column)).getyValue();
+        bValue[1] = ((MinNSE)objectMatrix2D.getQuick(row, column)).getLeftAllot();
+
+
+        int count = 0;
+        for(int i = 1; i < length_1; i++){
+            int ithRow = (int)(Math.rint(bValue[i] * q));
+            if(objectMatrix2D.getQuick(ithRow, i) == null) {
+                chosenY[i] = 1;
+                count++;
+                System.out.println("coefficient " + wavelet[i]);
+            }
+            else
+                chosenY[i] = ((MinNSE)objectMatrix2D.getQuick(ithRow, i)).getyValue();
+
+            if(i * 2 < length_1) {
+                if(objectMatrix2D.getQuick(ithRow, i) == null)
+                    bValue[i * 2] = 1;
+                else
+                    bValue[i * 2] = ((MinNSE)objectMatrix2D.getQuick(ithRow, i)).getLeftAllot();
+                bValue[i * 2 + 1] = bValue[i] - bValue[i * 2] - chosenY[i];
+            }
+        }
+
+        double sum = 0;
+        for(int i = 0; i < length_1; i++){
+//            if (i < 1000) {
+//                System.out.println(i + " " + chosenY[i]);
+//            }
+            sum += chosenY[i];
+        }
+
+        //performCoinFlips(wavelet, chosenY);
+        System.out.println("sum " + sum);
+        System.out.println("zero coefficients " + count);
+        return chosenY;
     }
 }

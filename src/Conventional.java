@@ -91,6 +91,9 @@ public class Conventional {
             }
         }
 
+        for(int i = 0; i < topNIndices.length; i++){
+            System.out.println(topNIndices[i] + " " + topNValues[i]);
+        }
         HashMap<Integer, Double> retainedCoeffs = storeToHashMap(topNIndices, topNValues);
         return retainedCoeffs;
         //populateWavelet(retainedCoeffs, wavelet.length);

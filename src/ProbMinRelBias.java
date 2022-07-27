@@ -1,5 +1,4 @@
 import cern.colt.matrix.impl.SparseObjectMatrix2D;
-import org.apache.commons.math3.analysis.function.Min;
 
 /**
  * @author Ulfiani Primawati
@@ -26,8 +25,8 @@ public class ProbMinRelBias {
         }
 
         // Added this
+        int j = 0;
         for(int i = wavelet.length; i < norm.length; i++){
-            int j = 0;
             norm[i] = Math.max(Math.abs(data[j]), nthPercentile);
             j++;
         }
@@ -199,9 +198,6 @@ public class ProbMinRelBias {
         if(root > wavelet.length - 1 || b - (double)nzArray[root] >= 0)
             return 0;
 
-//        if(nzArray[root] > b * q)
-//            return Double.POSITIVE_INFINITY;
-
         if(!(objectMatrix2D.getQuick(indexB, root) == null))
             return ((MinNSE)objectMatrix2D.getQuick(indexB, root)).getmValue();
 
@@ -218,11 +214,7 @@ public class ProbMinRelBias {
                 rootRight = 0.0;
                 rootSpace = 0.0;
             }
-//            else if(2 * root > wavelet.length - 1){
-//                rootSpace = (double)l / (double)q;
-//                rootLeft = ((1.0 - rootSpace) * Math.abs(wavelet[root])) / norm[root];
-//                rootRight = rootLeft;
-//            }
+
             else{
                 rootSpace = (double)l / (double)q;
                 rootLeft = ((1.0 - rootSpace) * Math.abs(wavelet[root])) / norm[2 * root];
@@ -250,7 +242,7 @@ public class ProbMinRelBias {
         return ((MinNSE)objectMatrix2D.getQuick(indexB, root)).getmValue();
     }
 
-    public static void callMainFunction1(double[] wavelet, double b, int q, double[] data, double percentile){
+    public static double[] callMainFunction1(double[] wavelet, double b, int q, double[] data, double percentile){
 
         long startingTime = System.currentTimeMillis();
 
@@ -347,5 +339,7 @@ public class ProbMinRelBias {
 
         System.out.println("Time for executing: " +
                 (System.currentTimeMillis() - startingTime) + "milliseconds.");
+
+        return chosenY;
     }
 }

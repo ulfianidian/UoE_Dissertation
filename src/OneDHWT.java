@@ -1,6 +1,7 @@
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * @author Ulfiani Primawati
@@ -409,5 +410,15 @@ public class OneDHWT {
         double[] wavelet = fileToArrayOfDoubles(filePath);
         orderedFastHWTInverse(wavelet);
         return wavelet;
+    }
+
+    public static HashMap<Integer, Double> fullToSummary(double[] wavelet){
+        HashMap<Integer, Double> mapping = new HashMap<>();
+        for(int i = 0; i < wavelet.length; i++){
+            if(wavelet[i] != 0.0){
+                mapping.put(i, wavelet[i]);
+            }
+        }
+        return mapping;
     }
 }

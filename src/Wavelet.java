@@ -10,6 +10,7 @@ public class Wavelet {
         final int Q = 10;
         final int PERCENTILE = 10;
 
+        // Generate zipfian frequency and create the dataset
         if(args[0].equals("generate")){
            if(args[1].equals("sequential")){
                 generateZipf(args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]),
@@ -22,6 +23,7 @@ public class Wavelet {
            }
         }
 
+        // Build the full wavelet
         else if(args[0].equals("build") && args[1].equals("wavelet")){
             double[] wavelet = OneDHWT.orderedFastHWT(args[2]);
             OneDHWT.saveDataToFile(wavelet, args[3]);
@@ -30,6 +32,7 @@ public class Wavelet {
         else if(args[0].equals("wavelet")){
             double[] wavelet = OneDHWT.orderedFastHWT(args[4]);
 
+            // Perform conventional thresholding and save the resulting wavelet coefficients in a file
             if(args[1].equals("conventional")){
                 // Perform normalization
                 double[] normalizedCoeffs = Conventional.normalizeCoeffs(wavelet);
@@ -54,6 +57,7 @@ public class Wavelet {
                 }
             }
 
+            // Perform Probabilistic MinL2 thresholding and save the resulting wavelet coefficients in a file
             else if(args[1].equals("minL2")){
                 ProbabilisticMinL2.waveletMinL2(wavelet, Integer.parseInt(args[2]));
                 if(args[3].equals("full")){
@@ -64,35 +68,48 @@ public class Wavelet {
                 }
             }
 
+            // Compute the probability distribution using minRelVar algorithm,
+            // Then save the probability distribution in a file
             else if(args[1].equals("minRelVar")){
-                ProbMinRelVar.callMainFunction(wavelet, Integer.parseInt(args[2]), Q,
+                double[] probability = ProbMinRelVar.callMainFunction2(wavelet, Integer.parseInt(args[2]), Q,
                         OneDHWT.fileToArrayOfDoubles(args[4]), PERCENTILE);
-                if(args[3].equals("full")){
-                    OneDHWT.saveDataToFile(wavelet, args[5]);
-                }
-                else if(args[3].equals("summary")){
-                    // Build summary
-                }
+                OneDHWT.saveDataToFile(probability, args[5]);
             }
 
+            // Compute the probability distribution using minRelBias algorithm
+            // Then save the probability distribution into a file
             else if(args[1].equals("minRelBias")){
-                ProbMinRelBias.callMainFunction1(wavelet, Integer.parseInt(args[2]), Q,
+                double[] probability = ProbMinRelBias.callMainFunction1(wavelet, Integer.parseInt(args[2]), Q,
                         OneDHWT.fileToArrayOfDoubles(args[4]), PERCENTILE);
-
-                if(args[3].equals("full")){
-                    OneDHWT.saveDataToFile(wavelet, args[5]);
-                }
-                else if(args[3].equals("summary")){
-                    // Build summary
-                }
+                OneDHWT.saveDataToFile(probability, args[5]);
             }
         }
 
         else if(args[0].equals("reconstruct")){
             double[] data = OneDHWT.orderedFastHWTInverse(args[3]);
+//            double[] wavelet = OneDHWT.fileToArrayOfDoubles(args[3]);
+//            double[] data = new double[wavelet.length];
+//            for(int i = 0; i < wavelet.length; i++)
+//                data[i] = getOneElement(wavelet, wavelet.length, i);
 
+            getMeanRelError(data, args[5], PERCENTILE);
+            getMaxRelError(data, args[5], PERCENTILE);
+            getPercentileRelativeError(data, args[5], PERCENTILE);
             OneDHWT.saveDataToFile(data, args[4]);
         }
+
+        else if(args[0].equals("flip-coin")){
+            double[] probability = OneDHWT.fileToArrayOfDoubles(args[2]);
+            double[] wavelet = OneDHWT.orderedFastHWT(args[3]);
+            if(args[1].equals("MinRelVar")){
+                ProbMinRelVar.performCoinFlips(wavelet, probability);
+                OneDHWT.saveDataToFile(wavelet, args[4]);
+            }
+            else if (args[1].equals("MinRelBias")){
+                ProbMinRelBias.performCoinFlips(wavelet, probability);
+            }
+        }
+
         else if(args[0].equals("get")){
 
             if(args[1].equals("mean-relative-error")){
@@ -169,8 +186,40 @@ public class Wavelet {
         System.out.println("Mean relative error: " + error);
     }
 
+    public static void getMeanRelError(double[] data, String originalDataPath, double percentile) throws IOException{
+        double[] originalData = OneDHWT.fileToArrayOfDoubles(originalDataPath);
+        double sanityBound = findPercentile(originalData, percentile);
+
+        double sum = 0.0;
+        double curr;
+        for(int i = 0; i < data.length; i++){
+            curr = Math.abs(data[i] - originalData[i])/Math.max(originalData[i], sanityBound);
+            sum = sum + curr;
+        }
+
+        double error = sum / data.length;
+        System.out.println("Mean relative error: " + error);
+    }
+
     public static void getMaxRelError(String dataPath, String originalDataPath, double percentile) throws IOException{
         double[] data = OneDHWT.orderedFastHWTInverse(dataPath);
+        double[] originalData = OneDHWT.fileToArrayOfDoubles(originalDataPath);
+        double sanityBound = findPercentile(originalData, percentile);
+
+        double max = 0.0;
+        double curr = 0.0;
+
+        for(int i = 0; i < data.length; i++){
+            curr = Math.abs(data[i] - originalData[i])/Math.max(originalData[i], sanityBound);
+            if(curr > max){
+                max = curr;
+            }
+        }
+
+        System.out.println("Maximum relative error: " + max);
+    }
+
+    public static void getMaxRelError(double[] data, String originalDataPath, double percentile) throws IOException{
         double[] originalData = OneDHWT.fileToArrayOfDoubles(originalDataPath);
         double sanityBound = findPercentile(originalData, percentile);
 
@@ -190,6 +239,29 @@ public class Wavelet {
     public static void getPercentileRelativeError(String dataPath, String originalDataPath, double percentile)
             throws IOException{
         double[] data = OneDHWT.orderedFastHWTInverse(dataPath);
+        double[] originalData = OneDHWT.fileToArrayOfDoubles(originalDataPath);
+        double sanityBound = findPercentile(originalData, percentile);
+        double curr;
+
+        List<Double> error = new ArrayList<>();
+        for(int i = 0; i < data.length; i++){
+            curr = Math.abs(data[i] - originalData[i])/Math.max(originalData[i], sanityBound);
+            error.add(curr);
+        }
+
+        Collections.sort(error);
+
+        if(percentile == 0.0){
+            System.out.println("25-percentile relative error: " + error.get(0));
+        }
+
+        int index = (int)Math.ceil((75 / 100.0) * error.size());
+
+        System.out.println("25-percentile relative error: " + error.get(index - 1));
+    }
+
+    public static void getPercentileRelativeError(double[] data, String originalDataPath, double percentile)
+            throws IOException{
         double[] originalData = OneDHWT.fileToArrayOfDoubles(originalDataPath);
         double sanityBound = findPercentile(originalData, percentile);
         double curr;
@@ -245,5 +317,31 @@ public class Wavelet {
             System.out.println(datum);
         }
         OneDHWT.saveDataToFile(data, writeTo);
+    }
+
+    public static double getOneElement(double[] wavelet, int tupleCounts, int nthValue){
+        final int NUM_OF_LOOPS = (int)(Math.log(tupleCounts) / Math.log(2.0));
+        int start = 0;
+        int middlePoint = tupleCounts / 2;
+        int end = tupleCounts - 1;
+        int i = 1;
+        double sum = wavelet[0];
+
+        for(int j = 0; j < NUM_OF_LOOPS; j++){
+            if(nthValue < middlePoint){
+                sum += wavelet[i];
+                i = 2 * i;
+                end = middlePoint - 1;
+                middlePoint = start + ( (middlePoint - start) / 2);
+            }
+
+            else{
+                sum -= wavelet[i];
+                i = 2 * i + 1;
+                start = middlePoint;
+                middlePoint = start + (end + 1 - start) / 2;
+            }
+        }
+        return sum;
     }
 }
