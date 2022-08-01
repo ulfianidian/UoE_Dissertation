@@ -7,7 +7,7 @@ import java.util.*;
 public class Wavelet {
     public static void main(String[] args) throws IOException {
 
-        final int Q = 10;
+        final int Q = 5;
         final int PERCENTILE = 10;
 
         // Generate zipfian frequency and create the dataset
@@ -107,6 +107,7 @@ public class Wavelet {
             }
             else if (args[1].equals("MinRelBias")){
                 ProbMinRelBias.performCoinFlips(wavelet, probability);
+                OneDHWT.saveDataToFile(wavelet, args[4]);
             }
         }
 
@@ -149,6 +150,47 @@ public class Wavelet {
             arrayOfDoubles = null;
 
             OneDHWT.saveDataToFile(doublePrims, args[2]);
+        }
+
+        else if(args[0].equals("flip-and-reconstruct")){
+            if(args[1].equals("MinRelVar")){
+                double[] probability = OneDHWT.fileToArrayOfDoubles(args[2]);
+                for(int i = 4; i < 9; i++) {
+                    double[] wavelet = OneDHWT.orderedFastHWT(args[3]);
+                    ProbMinRelVar.performCoinFlips(wavelet, probability);
+                    OneDHWT.saveDataToFile(wavelet, args[i]);
+                    OneDHWT.orderedFastHWTInverse(wavelet);
+                    getMeanRelError(wavelet, args[3], PERCENTILE);
+                    getMaxRelError(wavelet, args[3], PERCENTILE);
+                    getPercentileRelativeError(wavelet, args[3], PERCENTILE);
+                    System.out.println();
+                }
+            }
+            else if(args[1].equals("MinRelBias")){
+                double[] probability = OneDHWT.fileToArrayOfDoubles(args[2]);
+                for(int i = 4; i < 9; i++) {
+                    double[] wavelet = OneDHWT.orderedFastHWT(args[3]);
+                    ProbMinRelBias.performCoinFlips(wavelet, probability);
+                    OneDHWT.saveDataToFile(wavelet, args[i]);
+                    OneDHWT.orderedFastHWTInverse(wavelet);
+                    getMeanRelError(wavelet, args[3], PERCENTILE);
+                    getMaxRelError(wavelet, args[3], PERCENTILE);
+                    getPercentileRelativeError(wavelet, args[3], PERCENTILE);
+                    System.out.println();
+                }
+            }
+            else if(args[1].equals("MinL2")){
+                for(int i = 4; i < 9; i++) {
+                    double[] wavelet = OneDHWT.orderedFastHWT(args[3]);
+                    ProbabilisticMinL2.waveletMinL2(wavelet, Integer.parseInt(args[2]));
+                    OneDHWT.saveDataToFile(wavelet, args[i]);
+                    OneDHWT.orderedFastHWTInverse(wavelet);
+                    getMeanRelError(wavelet, args[3], PERCENTILE);
+                    getMaxRelError(wavelet, args[3], PERCENTILE);
+                    getPercentileRelativeError(wavelet, args[3], PERCENTILE);
+                    System.out.println();
+                }
+            }
         }
 
         else{

@@ -309,11 +309,12 @@ public class ProbMinRelBias {
 //            System.out.println();
 //        }
 
-
+        int count = 0;
         for(int i = 1; i < length_1; i++){
             int ithRow = (int)(Math.rint(bValue[i] * q));
             if(objectMatrix2D.getQuick(ithRow, i) == null) {
                 chosenY[i] = 1;
+                count++;
                 System.out.println("coefficient " + wavelet[i]);
             }
             else
@@ -334,8 +335,10 @@ public class ProbMinRelBias {
             sum += chosenY[i];
         }
 
-        performCoinFlips(wavelet, chosenY);
+        //performCoinFlips(wavelet, chosenY);
         System.out.println("sum " + sum);
+        System.out.println("zero coefficients: " + count);
+        System.out.println();
 
         System.out.println("Time for executing: " +
                 (System.currentTimeMillis() - startingTime) + "milliseconds.");
