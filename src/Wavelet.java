@@ -193,6 +193,41 @@ public class Wavelet {
             }
         }
 
+        else if(args[0].equals("wavelet-recursive")){
+
+            if(args[1].equals("conventional")){
+                int i = 3;      // the first argument that stores the number of coefficients to be retained
+                int j = 4;      // the first argument that stores the destination path for each b
+                while(i < args.length){
+                    buildConventional(args[2], args[i], args[j]);
+                    i = i + 2;
+                    j = j + 2;
+                }
+            }
+
+            else if(args[1].equals("minRelVar")){
+                int i = 3;      // the first argument that stores the number of coefficients to be retained
+                int j = 4;      // the first argument that stores the destination path for each b
+                while(i < args.length){
+                    System.out.println("Calculate probability distribution for b: " + args[i]);
+                    buildMinRelVar(args[2], args[i], Q, PERCENTILE, args[j]);
+                    i = i + 2;
+                    j = j + 2;
+                    System.out.println();
+                }
+            }
+
+            else if(args[1].equals("minRelBias")){
+                int i = 3;      // the first argument that stores the number of coefficients to be retained
+                int j = 4;      // the first argument that stores the destination path for each b
+                while(i < args.length){
+                    buildMinRelBias(args[2], args[i], Q, PERCENTILE, args[j]);
+                    i = i + 2;
+                    j = j + 2;
+                }
+            }
+        }
+
         else{
             System.out.println("Enter a valid command!");
         }
@@ -385,5 +420,66 @@ public class Wavelet {
             }
         }
         return sum;
+    }
+
+    /**
+     * Build conventional wavelet and save the resulting wavelet in a file. All the coefficients
+     * are going to be saved in the file, including all the zeros.
+     * @param dataPath path to the original data
+     * @param b the number of coefficients to be retained
+     * @param destinationPath destination path
+     * @throws IOException path is not valid
+     */
+    public static void buildConventional(String dataPath, String b, String destinationPath) throws IOException {
+        double[] wavelet = OneDHWT.orderedFastHWT(dataPath);
+
+        // Perform normalization
+        double[] normalizedCoeffs = Conventional.normalizeCoeffs(wavelet);
+
+        // Retain B largest coefficients
+        HashMap<Integer, Double> retainedCoeffs = Conventional.retainNCoeffs(wavelet,
+                normalizedCoeffs, Integer.parseInt(b));
+
+        OneDHWT.saveDataToFile(Conventional.populateWavelet(retainedCoeffs, wavelet.length), destinationPath);
+    }
+
+    /**
+     * Build minRelVar probability distribution and save the resulting probability
+     * distribution in a file. All the probability values are going to be saved in the file,
+     * including all the zeros.
+     *
+     * @param dataPath path to the original data
+     * @param b the number of coefficients to be retained
+     * @param Q q parameter for calculating the probability distribution
+     * @param PERCENTILE percentile
+     * @param destinationPath destination path for storing the probability distribution
+     * @throws IOException path does not exist
+     */
+    public static void buildMinRelVar(String dataPath, String b, int Q, int PERCENTILE, String destinationPath)
+            throws IOException{
+        double[] wavelet = OneDHWT.orderedFastHWT(dataPath);
+        double[] probability = ProbMinRelVar.callMainFunction2(wavelet, Integer.parseInt(b), Q,
+                OneDHWT.fileToArrayOfDoubles(dataPath), PERCENTILE);
+        OneDHWT.saveDataToFile(probability, destinationPath);
+    }
+
+    /**
+     * Build minRelBias probability distribution and save the resulting probability
+     * distribution in a file. All the probability values are going to be saved in the file,
+     * including all the zeros.
+     *
+     * @param dataPath path to the original data
+     * @param b the number of coefficients to be retained
+     * @param Q q parameter for calculating the probability distribution
+     * @param PERCENTILE percentile
+     * @param destinationPath destination path for storing the probability distribution
+     * @throws IOException path does not exist
+     */
+    public static void buildMinRelBias(String dataPath, String b, int Q, int PERCENTILE, String destinationPath)
+            throws IOException{
+        double[] wavelet = OneDHWT.orderedFastHWT(dataPath);
+        double[] probability = ProbMinRelBias.callMainFunction1(wavelet, Integer.parseInt(b), Q,
+                OneDHWT.fileToArrayOfDoubles(dataPath), PERCENTILE);
+        OneDHWT.saveDataToFile(probability, destinationPath);
     }
 }
