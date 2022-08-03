@@ -3,6 +3,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Random;
+import java.util.random.RandomGenerator;
 
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.commons.io.FileUtils;
@@ -50,6 +52,39 @@ public class ZipfianGenerator {
         PERMUTATION = permutation;
         WRITE_TO = writeTo;
         GAP = gap;
+    }
+
+    public ZipfianGenerator(int keySpace, int totalRecords, int start, String writeTo){
+        KEY_SPACE = keySpace;
+        TOTAL_RECORDS = totalRecords;
+        START = start;
+        WRITE_TO = writeTo;
+    }
+
+    public void generateUniformData() throws IOException {
+        File tempFile = new File(WRITE_TO);
+
+        File file = File.createTempFile("Uniform", ".txt", tempFile);
+
+        if(file.exists())
+            FileUtils.forceDelete(file);
+
+        FileWriter fileWriter = new FileWriter(file);
+
+        int upperBound = KEY_SPACE - START + 1;
+
+        try {
+            for (int i = 0; i < TOTAL_RECORDS; i++) {
+                Random rng = new Random();
+                int num = START + rng.nextInt(upperBound);
+                fileWriter.write(String.valueOf(num));
+                fileWriter.write('\n');
+            }
+        }
+        finally {
+            if (fileWriter != null)
+                fileWriter.close();
+        }
     }
 
     public void generateZipf() throws IOException{

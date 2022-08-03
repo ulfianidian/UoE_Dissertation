@@ -21,6 +21,11 @@ public class Wavelet {
                        Integer.parseInt(args[3]), Double.parseDouble(args[4]),
                        Integer.parseInt(args[5]), args[6], args[7], Integer.parseInt(args[8]));
            }
+           else if(args[1].equals("random")){
+               ZipfianGenerator uniRandom = new ZipfianGenerator(Integer.parseInt(args[2]),
+                       Integer.parseInt(args[3]), Integer.parseInt(args[4]), args[5]);
+               uniRandom.generateUniformData();
+           }
         }
 
         // Build the full wavelet
@@ -224,6 +229,37 @@ public class Wavelet {
                     buildMinRelBias(args[2], args[i], Q, PERCENTILE, args[j]);
                     i = i + 2;
                     j = j + 2;
+                }
+            }
+        }
+
+        else if(args[0].equals("get-multiple-distribution")){
+            if(args[1].equals("minRelVar")){
+                int i = 2;
+                int j = 3;
+                int k = 4;
+                while(i < args.length){
+                    System.out.println("Calculate probability distribution for b: " + args[j]);
+                    buildMinRelVar(args[i], args[j], Q, PERCENTILE, args[k]);
+                    System.out.println("Destination path: " + k);
+                    i = i + 3;
+                    j = j + 3;
+                    k = k + 3;
+                    System.out.println();
+                }
+            }
+            else if(args[1].equals("minRelBias")){
+                int i = 2;
+                int j = 3;
+                int k = 4;
+                while(i < args.length){
+                    System.out.println("Calculate probability distribution for b: " + args[j]);
+                    buildMinRelBias(args[i], args[j], Q, PERCENTILE, args[k]);
+                    System.out.println("Destination path: " + k);
+                    i = i + 3;
+                    j = j + 3;
+                    k = k + 3;
+                    System.out.println();
                 }
             }
         }
