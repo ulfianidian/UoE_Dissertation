@@ -264,6 +264,17 @@ public class Wavelet {
             }
         }
 
+        else if(args[0].equals("print-full-to-summary")){
+            for(int i = 1; i < args.length; i++){
+                double[] wavelet = OneDHWT.fileToArrayOfDoubles(args[i]);
+                HashMap<Integer, Double> summary = OneDHWT.fullToSummary(wavelet);
+                summary.entrySet().forEach(entry->{
+                    System.out.println(entry.getKey() + "\t" + entry.getValue());
+                });
+            }
+            System.out.println();
+        }
+
         else{
             System.out.println("Enter a valid command!");
         }
