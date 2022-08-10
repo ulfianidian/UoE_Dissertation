@@ -271,8 +271,22 @@ public class Wavelet {
                 summary.entrySet().forEach(entry->{
                     System.out.println(entry.getKey() + "\t" + entry.getValue());
                 });
+                System.out.println();
             }
-            System.out.println();
+        }
+
+        else if(args[0].equals("range-sum-error-metrics")){
+            int i = 1; // first wavelet path
+            int j = 2; // first original data path
+            int k = 3; // first query range size
+
+            while(i < args.length){
+                getAllMetricsSum(args[i], args[j], PERCENTILE, args[k]);
+                i = i + 3;
+                j = j + 3;
+                k = k + 3;
+                System.out.println();
+            }
         }
 
         else{
@@ -405,6 +419,94 @@ public class Wavelet {
         int index = (int)Math.ceil((75 / 100.0) * error.size());
 
         System.out.println("25-percentile relative error: " + error.get(index - 1));
+    }
+
+    public static void getAllMetricsSum(String waveletPath, String originalDataPath,
+                                        double percentile, String querySize)throws IOException{
+
+        int qSize = Integer.parseInt(querySize);
+        double[] data = OneDHWT.orderedFastHWTInverse(waveletPath);
+        double[] originalData = OneDHWT.fileToArrayOfDoubles(originalDataPath);
+
+        double[] sumQueryAnswers = new double[data.length - qSize + 1];
+        double[] sumQueryAnswersOri = new double[data.length - qSize + 1];
+
+        for(int i = 0; i < sumQueryAnswers.length; i++){
+            double sumReconstructed = 0;
+            double sumOriginal = 0;
+
+            for(int j = 0; j < qSize; j++){
+                sumReconstructed = sumReconstructed + data[i + j];
+                sumOriginal = sumOriginal + originalData[i + j];
+            }
+
+            sumQueryAnswers[i] = sumReconstructed;
+            sumQueryAnswersOri[i] = sumOriginal;
+        }
+
+        data = null;
+        originalData = null;
+
+        getMeanRelErrorSum(sumQueryAnswers, sumQueryAnswersOri, percentile);
+        getMaxRelErrorSum(sumQueryAnswers, sumQueryAnswersOri, percentile);
+        getPercentileRelativeErrorSum(sumQueryAnswers, sumQueryAnswersOri, percentile);
+    }
+    public static void getMeanRelErrorSum(double[] sumQueryAnswers, double[] sumQueryAnswersOri,
+                                          double percentile){
+
+        double sanityBound = findPercentile(sumQueryAnswersOri, percentile);
+
+        double sum = 0.0;
+        double curr;
+
+        for(int i = 0; i < sumQueryAnswers.length; i++){
+            curr = Math.abs(sumQueryAnswers[i] - sumQueryAnswersOri[i])/Math.max(sumQueryAnswersOri[i], sanityBound);
+            sum = sum + curr;
+        }
+
+        double error = sum / sumQueryAnswers.length;
+        System.out.println("Range-sum mean relative error: " + error);
+    }
+
+    public static void getMaxRelErrorSum(double[] sumQueryAnswers, double[] sumQueryAnswersOri,
+                                         double percentile){
+
+        double sanityBound = findPercentile(sumQueryAnswersOri, percentile);
+
+        double max = 0.0;
+        double curr = 0.0;
+
+        for(int i = 0; i < sumQueryAnswers.length; i++){
+            curr = Math.abs(sumQueryAnswers[i] - sumQueryAnswersOri[i])/Math.max(sumQueryAnswersOri[i], sanityBound);
+            if(curr > max){
+                max = curr;
+            }
+        }
+
+        System.out.println("Range-sum maximum relative error: " + max);
+    }
+
+    public static void getPercentileRelativeErrorSum(double[] sumQueryAnswers, double[] sumQueryAnswersOri,
+                                                     double percentile){
+
+        double sanityBound = findPercentile(sumQueryAnswersOri, percentile);
+        double curr;
+
+        List<Double> error = new ArrayList<>();
+        for(int i = 0; i < sumQueryAnswers.length; i++){
+            curr = Math.abs(sumQueryAnswers[i] - sumQueryAnswersOri[i])/Math.max(sumQueryAnswersOri[i], sanityBound);
+            error.add(curr);
+        }
+
+        Collections.sort(error);
+
+        if(percentile == 0.0){
+            System.out.println("25-percentile relative error: " + error.get(0));
+        }
+
+        int index = (int)Math.ceil((75 / 100.0) * error.size());
+
+        System.out.println("Rane-sum 25-percentile relative error: " + error.get(index - 1));
     }
 
     public static double findPercentile(double[] data, double percentile){
